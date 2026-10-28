@@ -299,7 +299,7 @@ def test_project_config_uses_data_yaml_paths(monkeypatch):
     assert cfg.manifest == Path(data["split"]["output"])
     assert cfg.image_root == Path(data["archive"]["output"])
     assert cfg.class_names == ("buildings", "forest", "glacier", "mountain", "sea", "street")
-    assert (cfg.image_size, cfg.batch_size, cfg.eval_batch_size) == (224, 16, 64)
+    assert (cfg.image_size, cfg.batch_size, cfg.eval_batch_size) == (224, 32, 64)
     assert cfg.augmentation.crop_scale == (0.6, 1.0)
     assert cfg.seed == 42
 

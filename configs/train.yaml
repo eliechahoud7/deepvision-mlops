@@ -21,26 +21,32 @@ data:
       hue: 0.02
 
 model:
-  backbone: resnet18     # Any torchvision classification model name, e.g. mobilenet_v3_small
-  pretrained: true       # Weights are fetched only when training starts
-  freeze_backbone: true  # Train the classifier head first
-  dropout: 0.2
+  # Supported: resnet18, resnet34, resnet50, mobilenet_v3_small, mobilenet_v3_large, efficientnet_b0
+  backbone: resnet18
+  pretrained: true       # ImageNet weights, downloaded on first use (~45 MB for resnet18)
+  dropout: 0.2           # Applied before the final classification layer
 
 training:
-  epochs: 10
-  batch_size: 16
-  gradient_accumulation_steps: 2   # Effective batch size of 32
-  mixed_precision: true            # Reduces VRAM use on CUDA
+  epochs: 10                       # Total across both fine-tuning phases
+  batch_size: 32                   # Full fine-tuning peaks at ~600 MiB on the 2 GB GPU
+  gradient_accumulation_steps: 1   # Fallback: halve batch_size and double this if CUDA runs out of memory
+  mixed_precision: true            # FP16 autocast with gradient scaling on CUDA; full precision on CPU
   optimizer: adamw
-  learning_rate: 0.001
   weight_decay: 0.0001
   scheduler: cosine
-  early_stopping_patience: 3
   device: auto                     # cuda if available, otherwise cpu
+  fine_tune:
+    head_epochs: 3                 # Phase 1: backbone frozen, only the classifier head trains
+    head_learning_rate: 0.001      # Head learning rate in both phases
+    backbone_learning_rate: 0.0001 # Phase 2: backbone unfrozen with this lower rate
+  early_stopping:
+    monitor: val_macro_f1          # Selected on validation only; the test set is never used
+    mode: max
+    patience: 3
 
 output:
   checkpoint_dir: artifacts/checkpoints
 
 mlflow:
-  tracking_uri: mlruns
+  tracking_uri: sqlite:///mlflow.db  # MLflow 3 rejects the plain ./mlruns file store; artifacts still go to mlruns/
   experiment_name: deepvision-baseline

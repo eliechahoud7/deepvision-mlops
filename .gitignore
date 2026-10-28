@@ -51,6 +51,8 @@ tmp/
 # MLflow local tracking
 mlruns/
 mlartifacts/
+mlflow.db
+mlflow.db-journal
 
 # DVC
 .dvc/cache/
