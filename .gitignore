@@ -8,6 +8,11 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Packaging and build output
+*.egg-info/
+build/
+dist/
+
 # Environment variables and secrets
 .env
 .env.*
