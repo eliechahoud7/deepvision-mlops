@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "deepvision"
+version = "0.1.0"
+description = "End-to-end image classification with PyTorch transfer learning and MLOps tooling."
+readme = "README.md"
+requires-python = ">=3.12"
+# Runtime dependencies are read from requirements.txt. PyTorch is installed
+# separately so the hardware-specific build is never replaced.
+dynamic = ["dependencies"]
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-ra"
+markers = [
+    "integration: tests that exercise multiple components together",
+    "smoke: fast end-to-end sanity checks",
+]

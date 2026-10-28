@@ -23,8 +23,10 @@ __pycache__/
 .coverage
 htmlcov/
 
-# Datasets and local data (root-anchored so source packages named "data" are not ignored)
-/data/
+# Datasets and local data (root-anchored so source packages named "data" are not ignored).
+# Everything under data/ is ignored except the placeholder that keeps the folder in Git.
+/data/*
+!/data/.gitkeep
 
 # Model weights and checkpoints (root-anchored so source packages named "models" are not ignored)
 *.pt

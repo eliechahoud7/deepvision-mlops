@@ -1,0 +1,39 @@
+# Initial training configuration for DeepVision.
+# Conservative defaults sized for a 2 GB VRAM GPU (GeForce MX450).
+
+seed: 42
+
+data:
+  train_dir: data/processed/train
+  val_dir: data/processed/val
+  test_dir: data/processed/test
+  num_classes: 6
+  class_names: []        # Filled in once the dataset is chosen
+  image_size: 224
+  num_workers: 2         # Keep low on Windows; raise if data loading is a bottleneck
+  pin_memory: true
+
+model:
+  backbone: resnet18     # Any torchvision classification model name, e.g. mobilenet_v3_small
+  pretrained: true       # Weights are fetched only when training starts
+  freeze_backbone: true  # Train the classifier head first
+  dropout: 0.2
+
+training:
+  epochs: 10
+  batch_size: 16
+  gradient_accumulation_steps: 2   # Effective batch size of 32
+  mixed_precision: true            # Reduces VRAM use on CUDA
+  optimizer: adamw
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  scheduler: cosine
+  early_stopping_patience: 3
+  device: auto                     # cuda if available, otherwise cpu
+
+output:
+  checkpoint_dir: artifacts/checkpoints
+
+mlflow:
+  tracking_uri: mlruns
+  experiment_name: deepvision-baseline
