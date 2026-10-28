@@ -34,3 +34,54 @@ stages:
       md5: 9ae19279b0dad442847416372414bd60.dir
       size: 368859597
       nfiles: 24335
+  audit:
+    cmd: python -m deepvision.data.audit --input 
+      data/interim/intel-image-classification --output-dir reports/audit 
+      --manifest data/processed/audit/manifest.csv --expected-width 150 
+      --expected-height 150 --expected-mode RGB --expected-format JPEG 
+      --dhash-max-distance 6 --phash-max-distance 6 --block-size 1024
+    deps:
+    - path: data/interim/intel-image-classification
+      hash: md5
+      md5: 9ae19279b0dad442847416372414bd60.dir
+      size: 368859597
+      nfiles: 24335
+    - path: src/deepvision/data/audit.py
+      hash: md5
+      md5: 81504692477fce4a3f2f8d30539aba58
+      size: 17955
+    params:
+      configs/data.yaml:
+        audit:
+          output_dir: reports/audit
+          manifest: data/processed/audit/manifest.csv
+          expected:
+            width: 150
+            height: 150
+            mode: RGB
+            format: JPEG
+          near_duplicates:
+            dhash_max_distance: 6
+            phash_max_distance: 6
+            block_size: 1024
+    outs:
+    - path: data/processed/audit/manifest.csv
+      hash: md5
+      md5: b6068a3fbbf27830bfd5eb55f89c71d5
+      size: 5460948
+    - path: reports/audit/exact_duplicates.csv
+      hash: md5
+      md5: 66af7627c55bc744cba626d6d5124d31
+      size: 13686
+    - path: reports/audit/image_issues.csv
+      hash: md5
+      md5: 60ed1082698445b23deadea578b15724
+      size: 3970
+    - path: reports/audit/near_duplicate_candidates.csv
+      hash: md5
+      md5: ae671028d85362c34d1d72099bb40a86
+      size: 16582
+    - path: reports/audit/summary.json
+      hash: md5
+      md5: 40b342536717e569b758d066357e534e
+      size: 2940

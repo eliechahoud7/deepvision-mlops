@@ -21,3 +21,35 @@ stages:
     outs:
       - ${archive.output}:
           cache: false  # Rebuilt from the cached ZIP; avoids a second copy in the cache
+
+  audit:
+    cmd: >-
+      python -m deepvision.data.audit
+      --input ${archive.output}
+      --output-dir ${audit.output_dir}
+      --manifest ${audit.manifest}
+      --expected-width ${audit.expected.width}
+      --expected-height ${audit.expected.height}
+      --expected-mode ${audit.expected.mode}
+      --expected-format ${audit.expected.format}
+      --dhash-max-distance ${audit.near_duplicates.dhash_max_distance}
+      --phash-max-distance ${audit.near_duplicates.phash_max_distance}
+      --block-size ${audit.near_duplicates.block_size}
+    deps:
+      - ${archive.output}
+      - src/deepvision/data/audit.py
+    params:
+      - configs/data.yaml:
+          - audit
+    outs:
+      - ${audit.manifest}
+      # Small review reports are committed to Git rather than cached.
+      - ${audit.output_dir}/image_issues.csv:
+          cache: false
+      - ${audit.output_dir}/exact_duplicates.csv:
+          cache: false
+      - ${audit.output_dir}/near_duplicate_candidates.csv:
+          cache: false
+    metrics:
+      - ${audit.output_dir}/summary.json:
+          cache: false

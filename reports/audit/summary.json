@@ -1,0 +1,152 @@
+{
+  "class_counts": {
+    "test": {
+      "buildings": 437,
+      "forest": 474,
+      "glacier": 553,
+      "mountain": 525,
+      "sea": 510,
+      "street": 501
+    },
+    "train": {
+      "buildings": 2191,
+      "forest": 2271,
+      "glacier": 2404,
+      "mountain": 2512,
+      "sea": 2274,
+      "street": 2382
+    }
+  },
+  "exact_duplicates": {
+    "file_sha256": {
+      "cross_split_groups": 27,
+      "groups": 47,
+      "groups_by_splits": {
+        "pred": 5,
+        "pred+test": 4,
+        "pred+train": 20,
+        "test+train": 3,
+        "train": 15
+      },
+      "images": 94,
+      "label_conflict_groups": 13,
+      "train_test_groups": 3
+    },
+    "pixel_sha256": {
+      "cross_split_groups": 0,
+      "groups": 0,
+      "groups_by_splits": {},
+      "images": 0,
+      "label_conflict_groups": 0,
+      "train_test_groups": 0
+    }
+  },
+  "images": {
+    "corrupt": 0,
+    "decoded": 24335,
+    "total": 24335
+  },
+  "issues": {
+    "unexpected_size": 68
+  },
+  "near_duplicates": {
+    "candidate_pairs": 154,
+    "cross_split_pairs": 91,
+    "dhash_max_distance": 6,
+    "label_conflict_pairs": 0,
+    "pairs_by_splits": {
+      "pred": 9,
+      "pred+test": 13,
+      "pred+train": 48,
+      "test": 2,
+      "test+train": 30,
+      "train": 52
+    },
+    "phash_max_distance": 6,
+    "train_test_pairs": 30
+  },
+  "pair_distance_histogram": {
+    "dhash": {
+      "0": 124,
+      "1": 134,
+      "10": 14788,
+      "11": 23511,
+      "12": 37870,
+      "2": 231,
+      "3": 432,
+      "4": 856,
+      "5": 1363,
+      "6": 2278,
+      "7": 3681,
+      "8": 5743,
+      "9": 9390
+    },
+    "phash": {
+      "0": 102,
+      "1": 0,
+      "10": 284,
+      "11": 0,
+      "12": 1826,
+      "2": 68,
+      "3": 0,
+      "4": 55,
+      "5": 0,
+      "6": 44,
+      "7": 0,
+      "8": 81,
+      "9": 0
+    }
+  },
+  "properties": {
+    "formats": {
+      "JPEG": 24335
+    },
+    "modes": {
+      "RGB": 24335
+    },
+    "sizes": {
+      "150x100": 2,
+      "150x102": 1,
+      "150x103": 1,
+      "150x105": 1,
+      "150x108": 3,
+      "150x110": 2,
+      "150x111": 3,
+      "150x112": 1,
+      "150x113": 7,
+      "150x115": 1,
+      "150x119": 1,
+      "150x120": 1,
+      "150x123": 2,
+      "150x124": 2,
+      "150x126": 1,
+      "150x129": 1,
+      "150x131": 3,
+      "150x133": 2,
+      "150x134": 2,
+      "150x135": 3,
+      "150x136": 2,
+      "150x139": 1,
+      "150x140": 1,
+      "150x141": 2,
+      "150x142": 2,
+      "150x143": 3,
+      "150x144": 3,
+      "150x145": 1,
+      "150x146": 2,
+      "150x147": 1,
+      "150x149": 3,
+      "150x150": 24267,
+      "150x72": 1,
+      "150x76": 2,
+      "150x81": 2,
+      "150x97": 1,
+      "500x374": 1
+    }
+  },
+  "split_counts": {
+    "pred": 7301,
+    "test": 3000,
+    "train": 14034
+  }
+}

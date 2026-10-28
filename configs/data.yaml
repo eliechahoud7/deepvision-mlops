@@ -9,3 +9,16 @@ archive:
     max_file_bytes: 5242880        # 5 MiB; largest image is ~28 KB
     max_total_bytes: 1073741824    # 1 GiB; archive expands to ~369 MB
     max_compression_ratio: 100.0   # Highest observed ratio is ~1.9
+
+audit:
+  output_dir: reports/audit                       # Small review reports, tracked in Git
+  manifest: data/processed/audit/manifest.csv     # Per-image manifest, cached by DVC
+  expected:
+    width: 150
+    height: 150
+    mode: RGB
+    format: JPEG
+  near_duplicates:
+    dhash_max_distance: 6          # A pair must satisfy both thresholds
+    phash_max_distance: 6
+    block_size: 1024               # Rows per comparison block; bounds memory use
