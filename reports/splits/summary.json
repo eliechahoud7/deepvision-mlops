@@ -1,0 +1,87 @@
+{
+  "class_counts": {
+    "test_clean": {
+      "buildings": 436,
+      "forest": 474,
+      "glacier": 552,
+      "mountain": 525,
+      "sea": 510,
+      "street": 500
+    },
+    "test_official": {
+      "buildings": 437,
+      "forest": 474,
+      "glacier": 553,
+      "mountain": 525,
+      "sea": 510,
+      "street": 501
+    },
+    "train": {
+      "buildings": 1858,
+      "forest": 1919,
+      "glacier": 2028,
+      "mountain": 2127,
+      "sea": 1930,
+      "street": 2020
+    },
+    "val": {
+      "buildings": 328,
+      "forest": 339,
+      "glacier": 358,
+      "mountain": 375,
+      "sea": 341,
+      "street": 357
+    }
+  },
+  "exclusions": {
+    "test": {
+      "label_conflict": 3
+    },
+    "train": {
+      "label_conflict": 23,
+      "linked_to_test": 34
+    }
+  },
+  "groups": {
+    "largest": 9,
+    "multi_image": 180,
+    "total": 24139
+  },
+  "images": {
+    "total": 24335
+  },
+  "leakage_checks": {
+    "groups_spanning_fit_test": 0,
+    "groups_spanning_train_val": 0
+  },
+  "pred": {
+    "linked_to_test": 17,
+    "linked_to_train": 69,
+    "total": 7301,
+    "unseen": 7218
+  },
+  "settings": {
+    "seed": 42,
+    "val_fraction": 0.15
+  },
+  "split_counts": {
+    "excluded": 54,
+    "pred": 7301,
+    "test": 2997,
+    "test_excluded": 3,
+    "train": 11882,
+    "val": 2098
+  },
+  "test_sets": {
+    "clean": 2997,
+    "official": 3000
+  },
+  "val_fraction_by_class": {
+    "buildings": 0.15,
+    "forest": 0.1501,
+    "glacier": 0.15,
+    "mountain": 0.1499,
+    "sea": 0.1502,
+    "street": 0.1502
+  }
+}

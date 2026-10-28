@@ -22,3 +22,9 @@ audit:
     dhash_max_distance: 6          # A pair must satisfy both thresholds
     phash_max_distance: 6
     block_size: 1024               # Rows per comparison block; bounds memory use
+
+split:
+  output: data/processed/splits/splits.csv    # Per-image split manifest, cached by DVC
+  summary: reports/splits/summary.json        # Split counts and checks, tracked in Git
+  val_fraction: 0.15                          # Share of each training class, as whole groups
+  seed: 42

@@ -85,3 +85,43 @@ stages:
       hash: md5
       md5: 40b342536717e569b758d066357e534e
       size: 2940
+  split:
+    cmd: python -m deepvision.data.split --manifest 
+      data/processed/audit/manifest.csv --exact-duplicates 
+      reports/audit/exact_duplicates.csv --near-duplicates 
+      reports/audit/near_duplicate_candidates.csv --output 
+      data/processed/splits/splits.csv --summary reports/splits/summary.json 
+      --val-fraction 0.15 --seed 42
+    deps:
+    - path: data/processed/audit/manifest.csv
+      hash: md5
+      md5: b6068a3fbbf27830bfd5eb55f89c71d5
+      size: 5460948
+    - path: reports/audit/exact_duplicates.csv
+      hash: md5
+      md5: 66af7627c55bc744cba626d6d5124d31
+      size: 13686
+    - path: reports/audit/near_duplicate_candidates.csv
+      hash: md5
+      md5: ae671028d85362c34d1d72099bb40a86
+      size: 16582
+    - path: src/deepvision/data/split.py
+      hash: md5
+      md5: 11ecc13c417c96710cd9ac9645d2874e
+      size: 12366
+    params:
+      configs/data.yaml:
+        split:
+          output: data/processed/splits/splits.csv
+          summary: reports/splits/summary.json
+          val_fraction: 0.15
+          seed: 42
+    outs:
+    - path: data/processed/splits/splits.csv
+      hash: md5
+      md5: 15bbec95148c1fe89f481c02247b68e6
+      size: 3083941
+    - path: reports/splits/summary.json
+      hash: md5
+      md5: d4ba46e57e1280280e56562a54762577
+      size: 1629

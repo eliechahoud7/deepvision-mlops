@@ -53,3 +53,27 @@ stages:
     metrics:
       - ${audit.output_dir}/summary.json:
           cache: false
+
+  split:
+    cmd: >-
+      python -m deepvision.data.split
+      --manifest ${audit.manifest}
+      --exact-duplicates ${audit.output_dir}/exact_duplicates.csv
+      --near-duplicates ${audit.output_dir}/near_duplicate_candidates.csv
+      --output ${split.output}
+      --summary ${split.summary}
+      --val-fraction ${split.val_fraction}
+      --seed ${split.seed}
+    deps:
+      - ${audit.manifest}
+      - ${audit.output_dir}/exact_duplicates.csv
+      - ${audit.output_dir}/near_duplicate_candidates.csv
+      - src/deepvision/data/split.py
+    params:
+      - configs/data.yaml:
+          - split
+    outs:
+      - ${split.output}
+    metrics:
+      - ${split.summary}:
+          cache: false
