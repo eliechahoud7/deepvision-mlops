@@ -24,9 +24,11 @@ __pycache__/
 htmlcov/
 
 # Datasets and local data (root-anchored so source packages named "data" are not ignored).
-# Everything under data/ is ignored except the placeholder that keeps the folder in Git.
-/data/*
+# Ignore data contents while allowing directory traversal, the placeholder, and DVC metadata.
+/data/**
+!/data/**/
 !/data/.gitkeep
+!/data/**/*.dvc
 
 # Model weights and checkpoints (root-anchored so source packages named "models" are not ignored)
 *.pt
