@@ -4,14 +4,21 @@
 seed: 42
 
 data:
-  train_dir: data/processed/train
-  val_dir: data/processed/val
-  test_dir: data/processed/test
+  config: configs/data.yaml  # Manifest (split.output) and image root (archive.output) come from here
+  class_names: [buildings, forest, glacier, mountain, sea, street]  # Index order used by the model
   num_classes: 6
-  class_names: []        # Filled in once the dataset is chosen
   image_size: 224
+  eval_batch_size: 64    # No gradients during evaluation, so larger batches fit in 2 GB
   num_workers: 2         # Keep low on Windows; raise if data loading is a bottleneck
-  pin_memory: true
+  pin_memory: true       # Applied only when running on CUDA
+  augmentation:          # Training split only
+    crop_scale: [0.6, 1.0]
+    horizontal_flip: 0.5
+    color_jitter:
+      brightness: 0.2
+      contrast: 0.2
+      saturation: 0.2
+      hue: 0.02
 
 model:
   backbone: resnet18     # Any torchvision classification model name, e.g. mobilenet_v3_small
