@@ -1,0 +1,11 @@
+# Dataset acquisition and extraction settings, used by dvc.yaml.
+
+archive:
+  path: data/raw/intel-image-classification.zip
+  sha256: 3921405607c3e9d67a3459b6c629894c3a723aa1647f9310b6793da306e89337
+  output: data/interim/intel-image-classification
+  limits:
+    max_entries: 30000             # Archive has 24,335 entries
+    max_file_bytes: 5242880        # 5 MiB; largest image is ~28 KB
+    max_total_bytes: 1073741824    # 1 GiB; archive expands to ~369 MB
+    max_compression_ratio: 100.0   # Highest observed ratio is ~1.9

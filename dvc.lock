@@ -1,0 +1,36 @@
+schema: '2.0'
+stages:
+  extract:
+    cmd: python -m deepvision.data.archive --archive 
+      data/raw/intel-image-classification.zip --output 
+      data/interim/intel-image-classification --sha256 
+      3921405607c3e9d67a3459b6c629894c3a723aa1647f9310b6793da306e89337 
+      --max-entries 30000 --max-file-bytes 5242880 --max-total-bytes 1073741824 
+      --max-compression-ratio 100.0
+    deps:
+    - path: data/raw/intel-image-classification.zip
+      hash: md5
+      md5: 7ca81e130042cf96ee43c0802da46daf
+      size: 363152213
+    - path: src/deepvision/data/archive.py
+      hash: md5
+      md5: d028f8d64788cf02f5b18fa45c325dd2
+      size: 12800
+    params:
+      configs/data.yaml:
+        archive:
+          path: data/raw/intel-image-classification.zip
+          sha256: 
+            3921405607c3e9d67a3459b6c629894c3a723aa1647f9310b6793da306e89337
+          output: data/interim/intel-image-classification
+          limits:
+            max_entries: 30000
+            max_file_bytes: 5242880
+            max_total_bytes: 1073741824
+            max_compression_ratio: 100.0
+    outs:
+    - path: data/interim/intel-image-classification
+      hash: md5
+      md5: 9ae19279b0dad442847416372414bd60.dir
+      size: 368859597
+      nfiles: 24335

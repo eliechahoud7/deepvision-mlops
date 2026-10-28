@@ -1,0 +1,23 @@
+vars:
+  - configs/data.yaml
+
+stages:
+  extract:
+    cmd: >-
+      python -m deepvision.data.archive
+      --archive ${archive.path}
+      --output ${archive.output}
+      --sha256 ${archive.sha256}
+      --max-entries ${archive.limits.max_entries}
+      --max-file-bytes ${archive.limits.max_file_bytes}
+      --max-total-bytes ${archive.limits.max_total_bytes}
+      --max-compression-ratio ${archive.limits.max_compression_ratio}
+    deps:
+      - ${archive.path}
+      - src/deepvision/data/archive.py
+    params:
+      - configs/data.yaml:
+          - archive
+    outs:
+      - ${archive.output}:
+          cache: false  # Rebuilt from the cached ZIP; avoids a second copy in the cache
