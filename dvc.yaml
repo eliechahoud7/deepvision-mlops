@@ -104,6 +104,41 @@ stages:
       - reports/training/history.csv:
           cache: false
 
+  evaluate:
+    # Held-out test evaluation of the trained checkpoint; see docs/evaluation.md.
+    cmd: python -m deepvision.evaluation.evaluate --config configs/evaluate.yaml
+    deps:
+      - artifacts/checkpoints/best.pt
+      - ${split.output}
+      - ${archive.output}
+      - src/deepvision/data/dataset.py
+      - src/deepvision/data/transforms.py
+      - src/deepvision/models
+      - src/deepvision/evaluation
+    params:
+      - configs/evaluate.yaml:
+      - configs/train.yaml:
+          - data
+    metrics:
+      - reports/evaluation/metrics.json:
+          cache: false
+    outs:
+      - reports/evaluation/per_class.csv:
+          cache: false
+      - reports/evaluation/confusion_matrix.csv:
+          cache: false
+      - reports/evaluation/excluded_predictions.csv:
+          cache: false
+      - reports/evaluation/errors.csv:
+          cache: false
+    plots:
+      - reports/evaluation/predictions.csv:
+          cache: false
+          template: confusion
+          x: label
+          y: predicted
+          title: Clean test confusion matrix
+
 plots:
   - Training and validation loss:
       template: linear

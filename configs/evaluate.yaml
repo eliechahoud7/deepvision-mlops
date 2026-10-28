@@ -1,0 +1,13 @@
+# Held-out test evaluation settings, used by dvc.yaml (see docs/evaluation.md).
+
+checkpoint: artifacts/checkpoints/best.pt
+train_config: configs/train.yaml   # Data paths, class names, and MLflow; the model comes from the checkpoint
+reports_dir: reports/evaluation
+splits: [test, test_official]      # test (2,997 images) is the primary result; test_official adds the 3 excluded
+batch_size: 64
+device: auto
+validation_check_tolerance: 0.005  # Training validated with FP16 on CUDA; evaluation runs in FP32
+bootstrap:
+  samples: 1000                    # 0 disables confidence intervals
+  seed: 42
+top_errors: 30                     # Most confident clean test errors listed for review
