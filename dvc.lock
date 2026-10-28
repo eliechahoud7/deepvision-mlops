@@ -125,3 +125,95 @@ stages:
       hash: md5
       md5: d4ba46e57e1280280e56562a54762577
       size: 1629
+  train:
+    cmd: python -m deepvision.training.train --config configs/train.yaml 
+      --restart
+    deps:
+    - path: data/interim/intel-image-classification
+      hash: md5
+      md5: 9ae19279b0dad442847416372414bd60.dir
+      size: 368859597
+      nfiles: 24335
+    - path: data/processed/splits/splits.csv
+      hash: md5
+      md5: 15bbec95148c1fe89f481c02247b68e6
+      size: 3083941
+    - path: src/deepvision/data/dataset.py
+      hash: md5
+      md5: e2b86d30a680a0dac77cc33e43634468
+      size: 9948
+    - path: src/deepvision/data/transforms.py
+      hash: md5
+      md5: f80664b5a812b2cdace792098e7db1aa
+      size: 1948
+    - path: src/deepvision/models
+      hash: md5
+      md5: 88d25b65680375a89e4edec276f778bd.dir
+      size: 4268
+      nfiles: 2
+    - path: src/deepvision/training
+      hash: md5
+      md5: 0fbd755b7183fb1e2bef55f6253c129c.dir
+      size: 41902
+      nfiles: 4
+    params:
+      configs/train.yaml:
+        data:
+          config: configs/data.yaml
+          class_names:
+          - buildings
+          - forest
+          - glacier
+          - mountain
+          - sea
+          - street
+          num_classes: 6
+          image_size: 224
+          eval_batch_size: 64
+          num_workers: 2
+          pin_memory: true
+          augmentation:
+            crop_scale:
+            - 0.6
+            - 1.0
+            horizontal_flip: 0.5
+            color_jitter:
+              brightness: 0.2
+              contrast: 0.2
+              saturation: 0.2
+              hue: 0.02
+        model:
+          backbone: resnet18
+          pretrained: true
+          dropout: 0.2
+        seed: 42
+        training:
+          epochs: 10
+          batch_size: 32
+          gradient_accumulation_steps: 1
+          mixed_precision: true
+          optimizer: adamw
+          weight_decay: 0.0001
+          scheduler: cosine
+          device: auto
+          fine_tune:
+            head_epochs: 3
+            head_learning_rate: 0.001
+            backbone_learning_rate: 0.0001
+          early_stopping:
+            monitor: val_macro_f1
+            mode: max
+            patience: 3
+    outs:
+    - path: artifacts/checkpoints/best.pt
+      hash: md5
+      md5: 0fce8f2bc9a2cdeb0792a0f98e9d6c1f
+      size: 44801150
+    - path: reports/training/history.csv
+      hash: md5
+      md5: 94f5f47a33ca849f95435d0f536ab06d
+      size: 2091
+    - path: reports/training/metrics.json
+      hash: md5
+      md5: dff8326d09d674fd06c9e14b5885c053
+      size: 388

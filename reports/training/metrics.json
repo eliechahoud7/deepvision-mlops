@@ -1,0 +1,15 @@
+{
+  "best": {
+    "val_accuracy": 0.9485224022878932,
+    "val_loss": 0.1801151930184962,
+    "val_macro_f1": 0.9493540728370294,
+    "val_macro_precision": 0.9495210192179302,
+    "val_macro_recall": 0.9496869358975449
+  },
+  "best_epoch": 8,
+  "completed": true,
+  "epochs_run": 10,
+  "peak_gpu_memory_mib": 570,
+  "stopped_early": false,
+  "training_seconds": 2938.13
+}
