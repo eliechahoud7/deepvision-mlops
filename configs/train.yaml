@@ -45,7 +45,8 @@ training:
     patience: 3
 
 output:
-  checkpoint_dir: artifacts/checkpoints
+  checkpoint_dir: artifacts/checkpoints  # best.pt (DVC output) and last.pt (resume state, not tracked)
+  reports_dir: reports/training          # metrics.json and history.csv, tracked in Git
 
 mlflow:
   tracking_uri: sqlite:///mlflow.db  # MLflow 3 rejects the plain ./mlruns file store; artifacts still go to mlruns/

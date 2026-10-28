@@ -77,3 +77,41 @@ stages:
     metrics:
       - ${split.summary}:
           cache: false
+
+  train:
+    # DVC reruns stages from scratch, so existing training state is replaced (--restart).
+    # To finish an interrupted run instead: run the module with --resume, then `dvc commit train`.
+    cmd: python -m deepvision.training.train --config configs/train.yaml --restart
+    deps:
+      - ${split.output}
+      - ${archive.output}
+      - src/deepvision/data/dataset.py
+      - src/deepvision/data/transforms.py
+      - src/deepvision/models
+      - src/deepvision/training
+    params:
+      - configs/train.yaml:
+          - seed
+          - data
+          - model
+          - training
+    outs:
+      - artifacts/checkpoints/best.pt
+    metrics:
+      - reports/training/metrics.json:
+          cache: false
+    plots:
+      - reports/training/history.csv:
+          cache: false
+
+plots:
+  - Training and validation loss:
+      template: linear
+      x: epoch
+      y:
+        reports/training/history.csv: [train_loss, val_loss]
+  - Validation accuracy and macro-F1:
+      template: linear
+      x: epoch
+      y:
+        reports/training/history.csv: [val_accuracy, val_macro_f1]

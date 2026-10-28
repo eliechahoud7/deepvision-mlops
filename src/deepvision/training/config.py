@@ -72,6 +72,7 @@ class TrainConfig:
     training: TrainingConfig
     checkpoint_dir: Path
     mlflow: MlflowConfig
+    reports_dir: Path = Path("reports/training")
 
 
 def _require(condition: bool, message: str) -> None:
@@ -137,6 +138,7 @@ def load_train_config(path: Path = Path("configs/train.yaml")) -> TrainConfig:
             ),
             checkpoint_dir=Path(raw["output"]["checkpoint_dir"]),
             mlflow=MlflowConfig(**raw["mlflow"]),
+            reports_dir=Path(raw["output"]["reports_dir"]),
         )
     except (KeyError, TypeError) as exc:
         raise ConfigError(f"invalid training configuration {path}: {exc!r}") from exc

@@ -47,6 +47,7 @@ def test_project_config_is_valid():
     assert (stopping.monitor, stopping.mode) == ("val_macro_f1", "max")
     assert config.mlflow.tracking_uri == "sqlite:///mlflow.db"
     assert config.checkpoint_dir == Path("artifacts/checkpoints")
+    assert config.reports_dir == Path("reports/training")
     assert config.data.batch_size == training.batch_size
     assert len(config.data.class_names) == 6
 
