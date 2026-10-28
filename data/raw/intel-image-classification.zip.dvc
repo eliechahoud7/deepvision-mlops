@@ -1,0 +1,5 @@
+outs:
+- md5: 7ca81e130042cf96ee43c0802da46daf
+  size: 363152213
+  hash: md5
+  path: intel-image-classification.zip
