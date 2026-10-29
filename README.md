@@ -8,6 +8,24 @@ train, track, serve, and monitor it.
 > inference service with a Streamlit frontend, their Docker images, GitHub Actions CI,
 > Prometheus/Grafana monitoring, and Evidently data drift analysis are implemented.
 
+## Screenshots
+
+**Main interface: single-image classification.** Upload a photo to get the predicted
+scene, its confidence, and the probabilities of all six classes.
+
+![Main interface: single-image classification](docs/screenshots/single-prediction.png)
+
+**Batch classification.** Upload many images at once, then review a summary, the
+predicted-class distribution, and per-image results.
+
+| Batch upload | Batch results |
+|---|---|
+| ![Batch upload](docs/screenshots/batch-upload.png) | ![Batch results](docs/screenshots/batch-results.png) |
+
+**Exported results.** Batch results can be downloaded as CSV (shown here opened in Excel).
+
+<img src="docs/screenshots/batch-results-csv.png" alt="Batch results exported as CSV, opened in Excel" width="420">
+
 ## Architecture
 
 | Concern | Tool |
