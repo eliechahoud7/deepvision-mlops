@@ -1,0 +1,11 @@
+# Data drift analysis settings, used by dvc.yaml (see docs/drift.md).
+
+checkpoint: artifacts/checkpoints/best.pt
+train_config: configs/train.yaml       # Manifest, image root, and class names
+reference_split: val                   # 2,098 labelled images from the training distribution
+current_split: pred                    # 7,301 unlabelled images: the stand-in for live traffic
+batch_size: 64
+device: auto
+drift_share: 0.5                       # A group (input / prediction) drifts at this share of its columns
+features_dir: data/processed/drift     # Per-image feature tables, cached by DVC
+reports_dir: reports/drift             # summary.json (Git) and report.html (DVC cache)

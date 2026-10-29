@@ -1,0 +1,249 @@
+{
+  "reference": {
+    "split": "val",
+    "images": 2098
+  },
+  "current": {
+    "split": "pred",
+    "images": 7301
+  },
+  "simulated": null,
+  "model_version": "resnet18-0fce8f2bc9a2",
+  "checkpoint_md5": "0fce8f2bc9a2cdeb0792a0f98e9d6c1f",
+  "dataset_drift": false,
+  "drifted_columns": 0,
+  "columns_tested": 19,
+  "drifted_share": 0.0,
+  "drift_share_threshold": 0.5,
+  "groups": {
+    "input": {
+      "drift": false,
+      "drifted_columns": 0,
+      "columns_tested": 10,
+      "drifted_share": 0.0
+    },
+    "prediction": {
+      "drift": false,
+      "drifted_columns": 0,
+      "columns_tested": 9,
+      "drifted_share": 0.0
+    }
+  },
+  "drifted_column_names": [],
+  "columns": {
+    "width": {
+      "method": "Jensen-Shannon distance",
+      "threshold": 0.1,
+      "score": 0.00689,
+      "drifted": false
+    },
+    "height": {
+      "method": "Wasserstein distance (normed)",
+      "threshold": 0.1,
+      "score": 0.054713,
+      "drifted": false
+    },
+    "brightness": {
+      "method": "Wasserstein distance (normed)",
+      "threshold": 0.1,
+      "score": 0.023241,
+      "drifted": false
+    },
+    "contrast": {
+      "method": "Wasserstein distance (normed)",
+      "threshold": 0.1,
+      "score": 0.02863,
+      "drifted": false
+    },
+    "red_mean": {
+      "method": "Wasserstein distance (normed)",
+      "threshold": 0.1,
+      "score": 0.030344,
+      "drifted": false
+    },
+    "green_mean": {
+      "method": "Wasserstein distance (normed)",
+      "threshold": 0.1,
+      "score": 0.021794,
+      "drifted": false
+    },
+    "blue_mean": {
+      "method": "Wasserstein distance (normed)",
+      "threshold": 0.1,
+      "score": 0.016379,
+      "drifted": false
+    },
+    "saturation": {
+      "method": "Wasserstein distance (normed)",
+      "threshold": 0.1,
+      "score": 0.032295,
+      "drifted": false
+    },
+    "sharpness": {
+      "method": "Wasserstein distance (normed)",
+      "threshold": 0.1,
+      "score": 0.030486,
+      "drifted": false
+    },
+    "entropy": {
+      "method": "Wasserstein distance (normed)",
+      "threshold": 0.1,
+      "score": 0.025046,
+      "drifted": false
+    },
+    "confidence": {
+      "method": "Wasserstein distance (normed)",
+      "threshold": 0.1,
+      "score": 0.013182,
+      "drifted": false
+    },
+    "prediction_entropy": {
+      "method": "Wasserstein distance (normed)",
+      "threshold": 0.1,
+      "score": 0.012245,
+      "drifted": false
+    },
+    "prob_buildings": {
+      "method": "Wasserstein distance (normed)",
+      "threshold": 0.1,
+      "score": 0.010651,
+      "drifted": false
+    },
+    "prob_forest": {
+      "method": "Wasserstein distance (normed)",
+      "threshold": 0.1,
+      "score": 0.002179,
+      "drifted": false
+    },
+    "prob_glacier": {
+      "method": "Wasserstein distance (normed)",
+      "threshold": 0.1,
+      "score": 0.006719,
+      "drifted": false
+    },
+    "prob_mountain": {
+      "method": "Wasserstein distance (normed)",
+      "threshold": 0.1,
+      "score": 0.011123,
+      "drifted": false
+    },
+    "prob_sea": {
+      "method": "Wasserstein distance (normed)",
+      "threshold": 0.1,
+      "score": 0.008712,
+      "drifted": false
+    },
+    "prob_street": {
+      "method": "Wasserstein distance (normed)",
+      "threshold": 0.1,
+      "score": 0.004623,
+      "drifted": false
+    },
+    "predicted_label": {
+      "method": "Jensen-Shannon distance",
+      "threshold": 0.1,
+      "score": 0.006986,
+      "drifted": false
+    }
+  },
+  "feature_means": {
+    "width": {
+      "reference": 150.0,
+      "current": 150.047939
+    },
+    "height": {
+      "reference": 149.882745,
+      "current": 149.994795
+    },
+    "brightness": {
+      "reference": 0.449918,
+      "current": 0.45133
+    },
+    "contrast": {
+      "reference": 0.23237,
+      "current": 0.232935
+    },
+    "red_mean": {
+      "reference": 0.431029,
+      "current": 0.433452
+    },
+    "green_mean": {
+      "reference": 0.458673,
+      "current": 0.459856
+    },
+    "blue_mean": {
+      "reference": 0.45438,
+      "current": 0.454321
+    },
+    "saturation": {
+      "reference": 0.311865,
+      "current": 0.307126
+    },
+    "sharpness": {
+      "reference": 0.120075,
+      "current": 0.11781
+    },
+    "entropy": {
+      "reference": 7.389901,
+      "current": 7.384098
+    },
+    "confidence": {
+      "reference": 0.963106,
+      "current": 0.964011
+    },
+    "prediction_entropy": {
+      "reference": 0.05371,
+      "current": 0.052764
+    },
+    "prob_buildings": {
+      "reference": 0.157134,
+      "current": 0.153418
+    },
+    "prob_forest": {
+      "reference": 0.161444,
+      "current": 0.16088
+    },
+    "prob_glacier": {
+      "reference": 0.184456,
+      "current": 0.182173
+    },
+    "prob_mountain": {
+      "reference": 0.162675,
+      "current": 0.166384
+    },
+    "prob_sea": {
+      "reference": 0.162732,
+      "current": 0.165896
+    },
+    "prob_street": {
+      "reference": 0.171558,
+      "current": 0.171249
+    }
+  },
+  "predicted_label_share": {
+    "buildings": {
+      "reference": 0.158246,
+      "current": 0.152445
+    },
+    "forest": {
+      "reference": 0.161582,
+      "current": 0.160526
+    },
+    "glacier": {
+      "reference": 0.179218,
+      "current": 0.177784
+    },
+    "mountain": {
+      "reference": 0.167779,
+      "current": 0.170935
+    },
+    "sea": {
+      "reference": 0.162536,
+      "current": 0.166279
+    },
+    "street": {
+      "reference": 0.170639,
+      "current": 0.172031
+    }
+  }
+}

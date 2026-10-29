@@ -139,6 +139,32 @@ stages:
           y: predicted
           title: Clean test confusion matrix
 
+  drift:
+    # Evidently data drift: unlabelled pred images vs validation; see docs/drift.md.
+    # Never reads the held-out test splits.
+    cmd: python -m deepvision.monitoring.drift --config configs/drift.yaml
+    deps:
+      - artifacts/checkpoints/best.pt
+      - ${split.output}
+      - ${archive.output}
+      - src/deepvision/data/dataset.py
+      - src/deepvision/data/transforms.py
+      - src/deepvision/models
+      - src/deepvision/evaluation/checkpoint.py
+      - src/deepvision/inference
+      - src/deepvision/monitoring
+    params:
+      - configs/drift.yaml:
+      - configs/train.yaml:
+          - data
+    outs:
+      - data/processed/drift/reference.csv
+      - data/processed/drift/current.csv
+      - reports/drift/report.html   # ~5 MB interactive report: DVC cache, not Git
+    metrics:
+      - reports/drift/summary.json:
+          cache: false
+
 plots:
   - Training and validation loss:
       template: linear

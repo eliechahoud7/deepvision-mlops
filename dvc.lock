@@ -316,3 +316,99 @@ stages:
       hash: md5
       md5: c5cb3299153f6d0a63d3c6ecdb486638
       size: 316016
+  drift:
+    cmd: python -m deepvision.monitoring.drift --config configs/drift.yaml
+    deps:
+    - path: artifacts/checkpoints/best.pt
+      hash: md5
+      md5: 0fce8f2bc9a2cdeb0792a0f98e9d6c1f
+      size: 44801150
+    - path: data/interim/intel-image-classification
+      hash: md5
+      md5: 9ae19279b0dad442847416372414bd60.dir
+      size: 368859597
+      nfiles: 24335
+    - path: data/processed/splits/splits.csv
+      hash: md5
+      md5: 15bbec95148c1fe89f481c02247b68e6
+      size: 3083941
+    - path: src/deepvision/data/dataset.py
+      hash: md5
+      md5: e2b86d30a680a0dac77cc33e43634468
+      size: 9948
+    - path: src/deepvision/data/transforms.py
+      hash: md5
+      md5: f80664b5a812b2cdace792098e7db1aa
+      size: 1948
+    - path: src/deepvision/evaluation/checkpoint.py
+      hash: md5
+      md5: d9e8cf11b711af420cb35bd8c130ff03
+      size: 3265
+    - path: src/deepvision/inference
+      hash: md5
+      md5: 7c79bcafac2420066fbeeec614157300.dir
+      size: 8047
+      nfiles: 2
+    - path: src/deepvision/models
+      hash: md5
+      md5: 88d25b65680375a89e4edec276f778bd.dir
+      size: 4268
+      nfiles: 2
+    - path: src/deepvision/monitoring
+      hash: md5
+      md5: e8a8ecb34be4ea04d16a4b72a423d1fc.dir
+      size: 18927
+      nfiles: 2
+    params:
+      configs/drift.yaml:
+        batch_size: 64
+        checkpoint: artifacts/checkpoints/best.pt
+        current_split: pred
+        device: auto
+        drift_share: 0.5
+        features_dir: data/processed/drift
+        reference_split: val
+        reports_dir: reports/drift
+        train_config: configs/train.yaml
+      configs/train.yaml:
+        data:
+          config: configs/data.yaml
+          class_names:
+          - buildings
+          - forest
+          - glacier
+          - mountain
+          - sea
+          - street
+          num_classes: 6
+          image_size: 224
+          eval_batch_size: 64
+          num_workers: 2
+          pin_memory: true
+          augmentation:
+            crop_scale:
+            - 0.6
+            - 1.0
+            horizontal_flip: 0.5
+            color_jitter:
+              brightness: 0.2
+              contrast: 0.2
+              saturation: 0.2
+              hue: 0.02
+    outs:
+    - path: data/processed/drift/current.csv
+      hash: md5
+      md5: 32bb2d4d790f81dd7cf04024600e09ca
+      size: 1372939
+    - path: data/processed/drift/reference.csv
+      hash: md5
+      md5: 4d35092144009f78f25a6c95c07992d6
+      size: 412413
+    - path: reports/drift/report.html
+      hash: md5
+      md5: 19944258d6e66e630a27b51c819a6917
+      size: 4941136
+    - path: reports/drift/summary.json
+      hash: md5
+      md5: 24861c7f6e03e9d4d3da90dc62c80441
+      size: 5752

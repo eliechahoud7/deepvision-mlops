@@ -5,8 +5,8 @@ image classifier built with PyTorch transfer learning, wrapped in the tooling ne
 train, track, serve, and monitor it.
 
 > **Status:** the data pipeline, training, held-out evaluation, a local FastAPI
-> inference service, its Docker image, GitHub Actions CI, and Prometheus/Grafana
-> monitoring are implemented. Evidently drift analysis is not implemented yet.
+> inference service, its Docker image, GitHub Actions CI, Prometheus/Grafana monitoring,
+> and Evidently data drift analysis are implemented.
 
 ## Architecture
 
@@ -53,14 +53,35 @@ pip install -e . --no-deps
 
 ## Pipeline
 
-The DVC pipeline (`dvc.yaml`) runs `extract → audit → split → train → evaluate`:
+The DVC pipeline (`dvc.yaml`) runs `extract → audit → split → train → evaluate`, plus
+`drift` after `train`:
 
 ```powershell
 dvc repro            # reruns only stages whose inputs changed
-dvc metrics show     # audit, split, training, and evaluation metrics
+dvc metrics show     # audit, split, training, evaluation, and drift metrics
 ```
 
 See `docs/evaluation.md` for the held-out test policy.
+
+## Data drift
+
+`dvc repro drift` uses Evidently to compare the dataset's 7,301 unlabelled `pred` images
+(the stand-in for live traffic) with the validation images. It never reads the held-out
+test set. Each image is described by 10 input statistics (brightness, contrast, colour,
+saturation, sharpness, entropy, size) and 9 model outputs (predicted class, confidence,
+prediction entropy, class probabilities). Input drift and prediction drift are judged
+separately.
+
+| Run | Input drift | Prediction drift | Verdict |
+|---|---|---|---|
+| `pred` vs `val` (real) | 0/10 columns | 0/9 columns | No drift |
+| Simulated darkening | 7/10 | 0/9 | Drift |
+| Simulated blur | 4/10 | 7/9 | Drift |
+
+The results are in `reports/drift/summary.json`, with an interactive report in
+`reports/drift/report.html`. `--simulate darken|blur` reproduces the demonstrations, and
+`--fail-on-drift` exits with code 3 for automation. See `docs/drift.md` for features,
+method, and limitations.
 
 ## Results (ResNet-18 baseline)
 
