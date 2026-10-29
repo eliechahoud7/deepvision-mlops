@@ -17,6 +17,7 @@ dist/
 .env
 .env.*
 !.env.example
+.streamlit/secrets.toml
 
 # Jupyter
 .ipynb_checkpoints/

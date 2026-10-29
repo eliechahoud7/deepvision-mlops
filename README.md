@@ -5,8 +5,8 @@ image classifier built with PyTorch transfer learning, wrapped in the tooling ne
 train, track, serve, and monitor it.
 
 > **Status:** the data pipeline, training, held-out evaluation, a local FastAPI
-> inference service, its Docker image, GitHub Actions CI, Prometheus/Grafana monitoring,
-> and Evidently data drift analysis are implemented.
+> inference service with a Streamlit frontend, their Docker images, GitHub Actions CI,
+> Prometheus/Grafana monitoring, and Evidently data drift analysis are implemented.
 
 ## Architecture
 
@@ -16,6 +16,7 @@ train, track, serve, and monitor it.
 | Experiment tracking | MLflow |
 | Data and pipeline versioning | DVC |
 | Inference API | FastAPI + Uvicorn |
+| Web frontend | Streamlit (a client of the API; no model in the frontend) |
 | Containerization | Docker |
 | CI/CD | GitHub Actions |
 | Testing | pytest |
@@ -28,10 +29,12 @@ train, track, serve, and monitor it.
 configs/            Training and pipeline configuration
 data/               Local datasets (raw, interim, processed); not committed to Git
 src/deepvision/     Python package: data, models, training, evaluation,
-                    inference, monitoring, utils, api
+                    inference, monitoring, utils, api, frontend
 tests/              Unit, integration, and smoke tests
 scripts/            Command-line entry points
 Dockerfile          CPU inference image (compose.yaml runs it)
+frontend.Dockerfile Streamlit frontend image (no model inside)
+.streamlit/         Streamlit settings: theme, telemetry off, upload limit
 .github/workflows/  CI/CD pipelines
 monitoring/         Prometheus and Grafana configuration
 docs/               Project documentation
@@ -123,8 +126,8 @@ Windows PowerShell, run from the repository root:
 Test-Path artifacts\checkpoints\best.pt -PathType Leaf   # must print True
 
 # 2. Build and start (first build downloads ~200 MB of CPU PyTorch wheels).
-#    This also starts Prometheus and Grafana (see Monitoring); for the API alone use
-#    `docker compose up --build -d api`.
+#    This also starts the Streamlit frontend (see Frontend) and Prometheus and Grafana
+#    (see Monitoring); for the API alone use `docker compose up --build -d api`.
 docker compose up --build -d
 docker compose ps            # wait for STATUS "(healthy)": the model is loaded
 docker compose logs -f api   # Ctrl+C stops following, not the container
@@ -187,6 +190,39 @@ line `model not ready: not_found` means the checkpoint was missing. Docker Deskt
 creates a missing bind-mount source as an **empty directory**, so if `best.pt` was absent
 at `docker compose up`, check for an empty `artifacts\checkpoints\best.pt` directory and
 remove it before restoring the file with `dvc pull`.
+
+## Frontend
+
+A dark-themed Streamlit interface at `http://127.0.0.1:8501`, started by
+`docker compose up --build -d`. It has three tabs:
+
+- **Single image:** a preview, the predicted scene and confidence, and a chart of all six
+  class probabilities.
+- **Batch:** many images at once, with per-image results, a summary, and a CSV export.
+- **About the model:** a model card with the held-out test metrics.
+
+```
+  browser ──► frontend :8501 ──── HTTP, network "frontend" ────► api :8000 (the only model)
+              Streamlit                                          FastAPI + CPU PyTorch
+```
+
+The frontend is only a client: it never loads the model, and its image contains no
+PyTorch. It validates uploads before previewing or sending them: JPG/JPEG/PNG only, file
+signature, size, and pixel count (read from the header, without decoding). It also checks
+every API response before showing it. In a batch, an image the API rejects is reported
+on its own and the rest are resent, with at most one request per image. Streamlit
+telemetry is off, and the container has the same hardening as the API. It shares a
+network only with the API, so it cannot reach Prometheus or Grafana.
+
+```powershell
+docker compose up --build -d
+Start-Process http://127.0.0.1:8501
+# Without Docker, with the API running locally:
+streamlit run src/deepvision/frontend/app.py
+```
+
+See `docs/frontend.md` for configuration (`DEEPVISION_API_URL` and the upload limits),
+security details, and limitations.
 
 ## Monitoring
 

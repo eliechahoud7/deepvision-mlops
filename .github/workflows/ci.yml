@@ -1,11 +1,11 @@
-# Continuous integration: lint, test, and build the inference image.
+# Continuous integration: lint, test, and build the inference and frontend images.
 #
 # Runs on pushes to main and on pull requests targeting main. Nothing is published:
-# the Docker image is built and smoke-tested on the runner, never pushed. The trained
+# the Docker images are built and smoke-tested on the runner, never pushed. The trained
 # checkpoint and dataset are DVC-tracked and not available here, so the tests use their
 # own synthetic data (the one real-checkpoint test skips) and the container smoke tests
-# (API alone, then API + Prometheus + Grafana) check the "no model" path. Training and
-# held-out evaluation never run in CI.
+# (API alone, frontend alone, then the full Compose stack) check the "no model" path.
+# Training and held-out evaluation never run in CI.
 #
 # Third-party actions are pinned to full commit SHAs (Dependabot keeps them current).
 
@@ -121,6 +121,18 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Build frontend image (not pushed)
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: frontend.Dockerfile
+          push: false
+          load: true
+          tags: deepvision-frontend:ci
+          # Own cache scope, so the two images do not overwrite each other's layers.
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,mode=max,scope=frontend
+
       - name: Smoke test the container (no checkpoint mounted)
         run: |
           set -euo pipefail
@@ -153,7 +165,46 @@ jobs:
         if: always()
         run: docker rm -f deepvision-api || true
 
-      - name: Smoke test the monitoring stack (compose.yaml)
+      - name: Smoke test the frontend container (no API)
+        run: |
+          set -euo pipefail
+          docker run -d --name deepvision-frontend -p 127.0.0.1:8501:8501 \
+            --read-only --tmpfs /tmp:size=64m,noexec,nosuid,nodev \
+            --cap-drop ALL --security-opt no-new-privileges --init \
+            deepvision-frontend:ci
+          for _ in $(seq 1 30); do
+            curl -fs -o /dev/null http://127.0.0.1:8501/_stcore/health && break
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:8501/_stcore/health | grep -q ok
+          curl -fsS -o /dev/null http://127.0.0.1:8501/
+          # Image properties: non-root, no model stack, telemetry and error details off.
+          test "$(docker exec deepvision-frontend id -u)" = 10001
+          docker exec deepvision-frontend python -c \
+            "import importlib.util as u; assert u.find_spec('torch') is None"
+          docker exec -w /app deepvision-frontend python -c "$(printf '%s\n' \
+            'from streamlit import config' \
+            'config.get_config_options(force_reparse=True)' \
+            'assert config.get_option("browser.gatherUsageStats") is False' \
+            'assert config.get_option("client.showErrorDetails") == "none"' \
+            'assert config.get_option("logger.hideWelcomeMessage") is True')"
+          # No public-IP lookup at startup (it would print an "External URL" line).
+          # (An explicit if: set -e ignores a failing "! command".)
+          if docker logs deepvision-frontend 2>&1 | grep -q "External URL"; then
+            echo "the frontend looked up its public IP"; exit 1
+          fi
+          docker image ls deepvision-frontend:ci
+          echo "Frontend smoke test passed"
+
+      - name: Frontend container logs
+        if: always()
+        run: docker logs deepvision-frontend 2>&1 || true
+
+      - name: Remove frontend container
+        if: always()
+        run: docker rm -f deepvision-frontend || true
+
+      - name: Smoke test the Compose stack (compose.yaml)
         run: |
           set -euo pipefail
           # compose.yaml mounts the DVC-tracked checkpoint, which is not available in CI: an
@@ -162,8 +213,27 @@ jobs:
           mkdir -p artifacts/checkpoints
           [ -e artifacts/checkpoints/best.pt ] || : > artifacts/checkpoints/best.pt
           docker tag deepvision-api:ci deepvision-api:latest
+          docker tag deepvision-frontend:ci deepvision-frontend:latest
           docker compose up -d --no-build api
           docker compose up -d --no-build --wait --wait-timeout 120 prometheus grafana
+          # Not part of --wait: that also waits for the frontend's dependency, the API, which
+          # is deliberately unhealthy here (no checkpoint). Poll the frontend's own health.
+          docker compose up -d --no-build frontend
+          for _ in $(seq 1 60); do
+            [ "$(docker inspect -f '{{.State.Health.Status}}' deepvision-frontend)" = healthy ] && break
+            sleep 2
+          done
+          test "$(docker inspect -f '{{.State.Health.Status}}' deepvision-frontend)" = healthy
+          # The frontend reaches the API on its own network, but not Prometheus or Grafana.
+          docker compose exec -T frontend python -c \
+            "import httpx; assert httpx.get('http://api:8000/health', timeout=5).status_code == 200"
+          for target in prometheus:9090 grafana:3000; do
+            if docker compose exec -T frontend python -c \
+              "import httpx; httpx.get('http://$target/', timeout=3)" 2>/dev/null; then
+              echo "frontend must not reach $target"; exit 1
+            fi
+          done
+          curl -fsS http://127.0.0.1:8501/_stcore/health | grep -q ok
           for _ in $(seq 1 30); do
             # "|| true": a failed attempt retries instead of ending the script (set -e).
             health=$(curl -fsS http://127.0.0.1:9090/api/v1/targets \
@@ -179,13 +249,13 @@ jobs:
           test "$rules" = 7
           curl -fsS http://127.0.0.1:3000/api/health | jq -e '.database == "ok"'
           curl -fsS 'http://127.0.0.1:3000/api/search?query=DeepVision' | jq -e 'any(.[]; .uid == "deepvision-api")'
-          echo "Monitoring smoke test passed"
+          echo "Compose stack smoke test passed"
 
-      - name: Monitoring stack logs
+      - name: Compose stack logs
         if: always()
         run: docker compose logs --no-color --tail 50 || true
 
-      - name: Stop the monitoring stack
+      - name: Stop the Compose stack
         if: always()
         run: docker compose down -v || true
 

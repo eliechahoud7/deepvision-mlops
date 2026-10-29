@@ -1,11 +1,13 @@
-# DeepVision inference service with local Prometheus + Grafana monitoring.
+# DeepVision inference service with a Streamlit frontend and local Prometheus + Grafana
+# monitoring.
 #
-#   docker compose up --build -d     # build and start api, prometheus, grafana
+#   docker compose up --build -d     # build and start api, frontend, prometheus, grafana
 #   docker compose up --build -d api # the API only
 #   docker compose ps                # each service shows (healthy) once ready
 #   docker compose down              # stop and remove (add -v to delete metric history)
 #
-# API: http://127.0.0.1:8000   Prometheus: http://127.0.0.1:9090   Grafana: http://127.0.0.1:3000
+# Frontend: http://127.0.0.1:8501   API: http://127.0.0.1:8000
+# Prometheus: http://127.0.0.1:9090   Grafana: http://127.0.0.1:3000
 # Every port is published on the host's loopback interface only.
 #
 # The checkpoint and its held-out evaluation report are bind-mounted read-only from the
@@ -13,7 +15,9 @@
 # The API health check is defined in the Dockerfile (it polls /ready).
 #
 # Networks: Prometheus reaches the API on "inference"; Grafana reaches only Prometheus on
-# "monitoring", so Grafana cannot call the API directly.
+# "monitoring", so Grafana cannot call the API directly. The frontend shares only the
+# "frontend" network with the API, so it cannot reach Prometheus or Grafana (or they it).
+# Only the API loads the model; the frontend image contains no model code.
 
 name: deepvision
 
@@ -63,6 +67,48 @@ services:
     stop_grace_period: 15s
     networks:
       - inference
+      - frontend
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend.Dockerfile
+    image: deepvision-frontend:latest
+    container_name: deepvision-frontend
+    init: true
+    restart: unless-stopped
+    # Started, not healthy: the UI should come up and report "model not loaded" if the
+    # API has no checkpoint.
+    depends_on:
+      api:
+        condition: service_started
+    ports:
+      # Host loopback only.
+      - "127.0.0.1:${FRONTEND_PORT:-8501}:8501"
+    environment:
+      DEEPVISION_API_URL: http://api:8000
+      # Same variables as the API, so the frontend's limits always match it.
+      DEEPVISION_MAX_UPLOAD_MB: ${DEEPVISION_MAX_UPLOAD_MB:-10}
+      DEEPVISION_MAX_BATCH: ${DEEPVISION_MAX_BATCH:-16}
+      STREAMLIT_SERVER_MAX_UPLOAD_SIZE: ${DEEPVISION_MAX_UPLOAD_MB:-10}  # whole MB
+    # Same hardening as the API; the health check (/_stcore/health) is in the Dockerfile.
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777,noexec,nosuid,nodev
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 512m
+    pids_limit: 256
+    stop_grace_period: 10s
+    networks:
+      - frontend
     logging:
       driver: json-file
       options:
@@ -197,6 +243,7 @@ services:
 networks:
   inference:
   monitoring:
+  frontend:
 
 volumes:
   prometheus-data:

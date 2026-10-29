@@ -1,0 +1,35 @@
+# Streamlit settings for the DeepVision frontend (read from the working directory:
+# the repository root locally, /app in the container). See docs/frontend.md.
+
+[browser]
+gatherUsageStats = false          # no usage telemetry (Streamlit's default is to send it)
+
+[logger]
+# The startup banner's "External URL" line looks up the public IP at checkip.amazonaws.com
+# when headless; hiding the banner skips that request (the only outbound call at startup).
+hideWelcomeMessage = true
+
+[client]
+showErrorDetails = "none"         # never show tracebacks or exception text in the browser
+toolbarMode = "viewer"            # hide developer options
+
+[server]
+headless = true
+enableXsrfProtection = true
+enableCORS = true
+enableStaticServing = false
+maxUploadSize = 10                # MB per file; matches the API's DEEPVISION_MAX_UPLOAD_MB
+runOnSave = false
+
+[runner]
+magicEnabled = false
+
+[theme]
+base = "dark"
+primaryColor = "#4F8BF9"
+backgroundColor = "#0E1117"
+secondaryBackgroundColor = "#161B26"
+textColor = "#E6E9EF"
+borderColor = "#2A3142"
+font = "sans-serif"
+baseRadius = "medium"

@@ -1,5 +1,6 @@
-# Development and test dependencies (includes runtime dependencies).
+# Development and test dependencies (includes runtime and frontend dependencies).
 -r requirements.txt
+-r requirements-frontend.txt
 
 pytest>=8.0,<10
 pytest-cov>=5.0,<8

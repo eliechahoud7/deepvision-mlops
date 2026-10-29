@@ -9,6 +9,10 @@
 !requirements.txt
 !requirements-serve.txt
 !src/
+# Frontend image (frontend.Dockerfile). Only the config file, never .streamlit/secrets.toml.
+!frontend.Dockerfile
+!requirements-frontend.txt
+!.streamlit/config.toml
 
 **/__pycache__
 **/*.py[cod]

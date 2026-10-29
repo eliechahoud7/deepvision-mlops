@@ -1,0 +1,8 @@
+# Dependencies of the Streamlit frontend only (used by frontend.Dockerfile and, through
+# requirements-dev.txt, by the tests). The frontend calls the inference API over HTTP and
+# never loads the model, so PyTorch is not needed here.
+# tests/unit/test_requirements.py checks these ranges against the other requirement files.
+
+streamlit>=1.66,<2
+httpx>=0.27,<1
+pillow>=10.4,<14

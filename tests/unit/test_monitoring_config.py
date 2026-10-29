@@ -154,7 +154,7 @@ def test_rule_expressions_reference_recording_rules_that_exist():
 # --- compose.yaml hardening ---------------------------------------------------------------
 
 
-@pytest.mark.parametrize("name", ["api", "prometheus", "grafana"])
+@pytest.mark.parametrize("name", ["api", "frontend", "prometheus", "grafana"])
 def test_services_are_hardened_and_localhost_only(name):
     service = compose()["services"][name]
     assert service["ports"] and all(p.startswith("127.0.0.1:") for p in service["ports"])
@@ -162,7 +162,7 @@ def test_services_are_hardened_and_localhost_only(name):
     assert service["cap_drop"] == ["ALL"]
     assert "no-new-privileges:true" in service["security_opt"]
     assert service["mem_limit"] and service["pids_limit"]
-    for volume in service["volumes"]:
+    for volume in service.get("volumes", []):
         if isinstance(volume, dict) and volume["type"] == "bind":
             assert volume["read_only"] is True, volume
             assert (ROOT / volume["source"]).exists() or "checkpoints" in volume["source"]
@@ -177,7 +177,43 @@ def test_monitoring_images_are_pinned(name):
 def test_grafana_is_isolated_from_the_api():
     services = compose()["services"]
     assert set(services["grafana"]["networks"]).isdisjoint(services["api"]["networks"])
-    assert set(services["prometheus"]["networks"]) >= set(services["api"]["networks"])
+    # Prometheus reaches the API on "inference" only; it is not on the frontend's network.
+    assert "inference" in services["prometheus"]["networks"]
+    assert "inference" in services["api"]["networks"]
+    assert "frontend" not in services["prometheus"]["networks"]
+
+
+def test_frontend_is_isolated_from_monitoring():
+    services = compose()["services"]
+    frontend = set(services["frontend"]["networks"])
+    assert frontend == {"frontend"} and "frontend" in services["api"]["networks"]
+    for name in ("prometheus", "grafana"):
+        assert frontend.isdisjoint(services[name]["networks"]), name
+
+
+def test_frontend_never_gets_the_model():
+    frontend = compose()["services"]["frontend"]
+    assert frontend["environment"]["DEEPVISION_API_URL"] == "http://api:8000"
+    assert "volumes" not in frontend  # no checkpoint or report mounts
+    lines = (ROOT / "frontend.Dockerfile").read_text(encoding="utf-8").splitlines()
+    dockerfile = "\n".join(line for line in lines if not line.lstrip().startswith("#"))
+    assert "requirements-frontend.txt" in dockerfile and "torch" not in dockerfile.lower()
+    assert "COPY src/deepvision/frontend/" in dockerfile and "COPY src " not in dockerfile
+    # Limits follow the API's variables, so the two cannot drift apart in Compose.
+    env = frontend["environment"]
+    assert env["DEEPVISION_MAX_UPLOAD_MB"] == "${DEEPVISION_MAX_UPLOAD_MB:-10}"
+    assert env["DEEPVISION_MAX_BATCH"] == "${DEEPVISION_MAX_BATCH:-16}"
+
+
+def test_streamlit_secrets_never_enter_git_or_images():
+    assert ".streamlit/secrets.toml" in (ROOT / ".gitignore").read_text(encoding="utf-8")
+    dockerignore = (ROOT / ".dockerignore").read_text(encoding="utf-8").splitlines()
+    assert "!.streamlit/config.toml" in dockerignore
+    assert not [
+        line
+        for line in dockerignore
+        if line.startswith("!.streamlit") and "config.toml" not in line
+    ]
 
 
 def test_grafana_is_offline_and_read_only_for_anonymous_users():
