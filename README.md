@@ -65,12 +65,12 @@ See `docs/evaluation.md` for the held-out test policy.
 
 ## Data drift
 
-`dvc repro drift` uses Evidently to compare the dataset's 7,301 unlabelled `pred` images
-(the stand-in for live traffic) with the validation images. It never reads the held-out
-test set. Each image is described by 10 input statistics (brightness, contrast, colour,
-saturation, sharpness, entropy, size) and 9 model outputs (predicted class, confidence,
-prediction entropy, class probabilities). Input drift and prediction drift are judged
-separately.
+`dvc repro --single-item drift` uses Evidently to compare the dataset's 7,301 unlabelled
+`pred` images (the stand-in for live traffic) with the validation images. It never reads
+the held-out test set. `--single-item` runs only this stage, never retraining. Each image
+is described by 10 input statistics (brightness, contrast, colour, saturation, sharpness,
+entropy, size) and 9 model outputs (predicted class, confidence, prediction entropy, class
+probabilities). Input drift and prediction drift are judged separately.
 
 | Run | Input drift | Prediction drift | Verdict |
 |---|---|---|---|

@@ -64,7 +64,9 @@ and `glacier` drops from 18% to 6%.
 From the repository root, with the virtual environment active:
 
 ```powershell
-dvc repro drift                     # or: python -m deepvision.monitoring.drift
+# --single-item runs only this stage: plain `dvc repro drift` would first rerun any
+# outdated upstream stage, including training.
+dvc repro --single-item drift       # or: python -m deepvision.monitoring.drift
 dvc metrics show reports/drift/summary.json
 Start-Process reports\drift\report.html   # interactive Evidently report
 
