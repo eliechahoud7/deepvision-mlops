@@ -1,0 +1,15 @@
+# Allow-list: the build context contains only what the image build needs.
+# Everything else (data, checkpoints, MLflow runs, DVC cache, .venv, .git, reports,
+# tests) stays out of the context and out of the image.
+*
+
+!Dockerfile
+!pyproject.toml
+!README.md
+!requirements.txt
+!requirements-serve.txt
+!src/
+
+**/__pycache__
+**/*.py[cod]
+**/*.egg-info

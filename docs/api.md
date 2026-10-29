@@ -29,6 +29,9 @@ uvicorn deepvision.api.app:create_app --factory --host 127.0.0.1 --port 8000 --w
 
 Interactive OpenAPI documentation: `http://127.0.0.1:8000/docs`.
 
+To run it in Docker (CPU-only PyTorch, checkpoint mounted read-only), see the Docker
+section of the README: `docker compose up --build -d`.
+
 **Run one worker.** Each Uvicorn worker is a separate process that loads its own copy of
 the model, and a single forward pass already uses several CPU threads. Within the worker,
 prediction endpoints run in FastAPI's thread pool (the event loop stays free for health
@@ -139,9 +142,10 @@ Dashboards and alerting belong to the monitoring milestone.
 
 ## Limitations and security
 
-- **No authentication, TLS, or rate limiting.** The service binds to `127.0.0.1` and is
-  meant for local use. Before exposing it to a network, put it behind authentication,
-  TLS, request rate limits, and a reverse proxy with its own body-size limits.
+- **No authentication, TLS, or rate limiting.** The service binds to `127.0.0.1` (in
+  Docker, the port is published on the host's `127.0.0.1` only) and is meant for local
+  use. Before exposing it to a network, put it behind authentication, TLS, request rate
+  limits, and a reverse proxy with its own body-size limits.
 - **Single process.** Throughput is roughly one CPU-bound forward pass at a time; use
   `/predict/batch` for bulk work.
 - **Out-of-distribution images** (not one of the six scene types) still receive one of the

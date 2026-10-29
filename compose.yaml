@@ -1,0 +1,61 @@
+# DeepVision inference service.
+#
+#   docker compose up --build -d     # build and start
+#   docker compose ps                # STATUS shows (healthy) once the model is loaded
+#   docker compose down              # stop and remove
+#
+# The checkpoint and its held-out evaluation report are bind-mounted read-only from the
+# repository (produce them with `dvc repro` or `dvc pull`); they are not in the image.
+# The health check is defined in the Dockerfile (it polls /ready).
+
+name: deepvision
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: deepvision-api:latest
+    container_name: deepvision-api
+    init: true
+    restart: unless-stopped
+    ports:
+      # Host loopback only: the API has no authentication or TLS.
+      - "127.0.0.1:${DEEPVISION_PORT:-8000}:8000"
+    environment:
+      DEEPVISION_DEVICE: cpu
+      DEEPVISION_NUM_THREADS: ${DEEPVISION_NUM_THREADS:-}
+      DEEPVISION_MAX_UPLOAD_MB: ${DEEPVISION_MAX_UPLOAD_MB:-10}
+      DEEPVISION_MAX_BATCH: ${DEEPVISION_MAX_BATCH:-16}
+    volumes:
+      # Long syntax with create_host_path: false, so a missing file is an error instead
+      # of Docker silently creating an empty directory at the host path.
+      - type: bind
+        source: ./artifacts/checkpoints/best.pt
+        target: /app/artifacts/checkpoints/best.pt
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./reports/evaluation/metrics.json
+        target: /app/reports/evaluation/metrics.json
+        read_only: true
+        bind:
+          create_host_path: false
+    # Hardening: read-only root filesystem, no Linux capabilities, no privilege
+    # escalation, non-root user (set in the Dockerfile), bounded resources.
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777,noexec,nosuid,nodev
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 2g
+    pids_limit: 256
+    stop_grace_period: 15s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
