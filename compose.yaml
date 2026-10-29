@@ -1,12 +1,19 @@
-# DeepVision inference service.
+# DeepVision inference service with local Prometheus + Grafana monitoring.
 #
-#   docker compose up --build -d     # build and start
-#   docker compose ps                # STATUS shows (healthy) once the model is loaded
-#   docker compose down              # stop and remove
+#   docker compose up --build -d     # build and start api, prometheus, grafana
+#   docker compose up --build -d api # the API only
+#   docker compose ps                # each service shows (healthy) once ready
+#   docker compose down              # stop and remove (add -v to delete metric history)
+#
+# API: http://127.0.0.1:8000   Prometheus: http://127.0.0.1:9090   Grafana: http://127.0.0.1:3000
+# Every port is published on the host's loopback interface only.
 #
 # The checkpoint and its held-out evaluation report are bind-mounted read-only from the
 # repository (produce them with `dvc repro` or `dvc pull`); they are not in the image.
-# The health check is defined in the Dockerfile (it polls /ready).
+# The API health check is defined in the Dockerfile (it polls /ready).
+#
+# Networks: Prometheus reaches the API on "inference"; Grafana reaches only Prometheus on
+# "monitoring", so Grafana cannot call the API directly.
 
 name: deepvision
 
@@ -54,8 +61,143 @@ services:
     mem_limit: 2g
     pids_limit: 256
     stop_grace_period: 15s
+    networks:
+      - inference
     logging:
       driver: json-file
       options:
         max-size: "10m"
         max-file: "3"
+
+  prometheus:
+    image: prom/prometheus:v3.15.1@sha256:fa3302279710be2f21a8301ec17a8b4f2301fd829bd113839b3b6b02b6f191a2
+    container_name: deepvision-prometheus
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=15d
+      - --storage.tsdb.retention.size=1GB
+    ports:
+      # Host loopback only: Prometheus has no authentication.
+      - "127.0.0.1:${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - type: bind
+        source: ./monitoring/prometheus/prometheus.yml
+        target: /etc/prometheus/prometheus.yml
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./monitoring/prometheus/rules
+        target: /etc/prometheus/rules
+        read_only: true
+        bind:
+          create_host_path: false
+      - prometheus-data:/prometheus
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:9090/-/ready"]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      start_interval: 2s
+      retries: 3
+    # Same hardening as the API; the image already runs as the unprivileged "nobody" user.
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 512m
+    pids_limit: 256
+    networks:
+      - inference
+      - monitoring
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  grafana:
+    image: grafana/grafana:13.2.5@sha256:9f7aa1e1e3246aade5792d35a738049f7f32f89cd51d1956cf426a4e86268a84
+    container_name: deepvision-grafana
+    restart: unless-stopped
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    ports:
+      # Host loopback only.
+      - "127.0.0.1:${GRAFANA_PORT:-3000}:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      # Set GRAFANA_ADMIN_PASSWORD in your shell or .env; the fallback is for local use only.
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      # Dashboards are readable without logging in (Viewer role); editing requires admin.
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_AUTH_ANONYMOUS_HIDE_VERSION: "true"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      # Fully offline: no telemetry, update checks, news feed, Gravatar, or plugin downloads.
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: "false"
+      GF_ANALYTICS_FEEDBACK_LINKS_ENABLED: "false"
+      GF_NEWS_NEWS_FEED_ENABLED: "false"
+      GF_SECURITY_DISABLE_GRAVATAR: "true"
+      GF_PLUGINS_PREINSTALL_DISABLED: "true"
+      GF_LOG_MODE: console
+    volumes:
+      # Only these two provisioning folders: the image's empty plugins/ and alerting/
+      # folders stay in place (Grafana logs errors if they are missing).
+      - type: bind
+        source: ./monitoring/grafana/provisioning/datasources
+        target: /etc/grafana/provisioning/datasources
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./monitoring/grafana/provisioning/dashboards
+        target: /etc/grafana/provisioning/dashboards
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./monitoring/grafana/dashboards
+        target: /etc/grafana/dashboards
+        read_only: true
+        bind:
+          create_host_path: false
+      - grafana-data:/var/lib/grafana
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      start_interval: 2s
+      retries: 3
+    # Same hardening as the API; the image already runs as the unprivileged "grafana" user.
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777,noexec,nosuid,nodev
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 512m
+    pids_limit: 256
+    networks:
+      - monitoring
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  inference:
+  monitoring:
+
+volumes:
+  prometheus-data:
+  grafana-data:

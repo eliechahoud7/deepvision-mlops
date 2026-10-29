@@ -3,8 +3,9 @@
 # Runs on pushes to main and on pull requests targeting main. Nothing is published:
 # the Docker image is built and smoke-tested on the runner, never pushed. The trained
 # checkpoint and dataset are DVC-tracked and not available here, so the tests use their
-# own synthetic data (the one real-checkpoint test skips) and the container smoke test
-# checks the "no model" path. Training and held-out evaluation never run in CI.
+# own synthetic data (the one real-checkpoint test skips) and the container smoke tests
+# (API alone, then API + Prometheus + Grafana) check the "no model" path. Training and
+# held-out evaluation never run in CI.
 #
 # Third-party actions are pinned to full commit SHAs (Dependabot keeps them current).
 
@@ -151,3 +152,61 @@ jobs:
       - name: Remove container
         if: always()
         run: docker rm -f deepvision-api || true
+
+      - name: Smoke test the monitoring stack (compose.yaml)
+        run: |
+          set -euo pipefail
+          # compose.yaml mounts the DVC-tracked checkpoint, which is not available in CI: an
+          # empty placeholder makes the API start in its "model not ready" state.
+          # Never overwrite an existing file.
+          mkdir -p artifacts/checkpoints
+          [ -e artifacts/checkpoints/best.pt ] || : > artifacts/checkpoints/best.pt
+          docker tag deepvision-api:ci deepvision-api:latest
+          docker compose up -d --no-build api
+          docker compose up -d --no-build --wait --wait-timeout 120 prometheus grafana
+          for _ in $(seq 1 30); do
+            # "|| true": a failed attempt retries instead of ending the script (set -e).
+            health=$(curl -fsS http://127.0.0.1:9090/api/v1/targets \
+              | jq -r '.data.activeTargets[] | select(.labels.job == "deepvision-api") | .health') || true
+            [ "$health" = up ] && break
+            sleep 2
+          done
+          test "$health" = up
+          ready=$(curl -fsS http://127.0.0.1:9090/api/v1/query --data-urlencode 'query=deepvision_model_ready' \
+            | jq -r '.data.result[0].value[1]')
+          test "$ready" = 0
+          rules=$(curl -fsS http://127.0.0.1:9090/api/v1/rules | jq '[.data.groups[].rules[] | select(.health == "ok")] | length')
+          test "$rules" = 7
+          curl -fsS http://127.0.0.1:3000/api/health | jq -e '.database == "ok"'
+          curl -fsS 'http://127.0.0.1:3000/api/search?query=DeepVision' | jq -e 'any(.[]; .uid == "deepvision-api")'
+          echo "Monitoring smoke test passed"
+
+      - name: Monitoring stack logs
+        if: always()
+        run: docker compose logs --no-color --tail 50 || true
+
+      - name: Stop the monitoring stack
+        if: always()
+        run: docker compose down -v || true
+
+  monitoring-config:
+    name: Prometheus config and alert rule tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Check config, lint rules, and run rule unit tests (promtool)
+        run: |
+          set -euo pipefail
+          # Same pinned image as compose.yaml.
+          image=$(docker compose config --images | grep '^prom/prometheus')
+          promtool() {
+            docker run --rm -v "$PWD/monitoring/prometheus:/etc/prometheus:ro" \
+              -w /etc/prometheus --entrypoint promtool "$image" "$@"
+          }
+          promtool check config --lint=all --lint-fatal prometheus.yml
+          promtool check rules --lint=all --lint-fatal rules/deepvision.yml
+          promtool test rules tests/deepvision_rules_test.yml

@@ -33,6 +33,7 @@ from prometheus_client import (
     Counter,
     Gauge,
     Histogram,
+    ProcessCollector,
     generate_latest,
 )
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -95,12 +96,23 @@ def error_response(status: int, code: str, message: str, details=None) -> JSONRe
 
 
 class ServiceMetrics:
-    """Prometheus metrics in a private registry (one per app instance)."""
+    """Prometheus metrics in a private registry (one per app instance).
+
+    Also exports the standard process_* metrics (CPU, memory, start time); they are
+    read from /proc, so they are empty on non-Linux hosts.
+    """
 
     def __init__(self) -> None:
         self.registry = CollectorRegistry()
+        ProcessCollector(registry=self.registry)
         self.requests = Counter(
             "deepvision_requests", "HTTP requests", ["endpoint", "status"], registry=self.registry
+        )
+        self.requests_in_progress = Gauge(
+            "deepvision_requests_in_progress",
+            "HTTP requests being processed",
+            ["endpoint"],
+            registry=self.registry,
         )
         self.request_latency = Histogram(
             "deepvision_request_latency_seconds",
@@ -266,7 +278,15 @@ def create_app(settings: Settings | None = None, *, predictor_factory=Predictor)
     async def observe_requests(request: Request, call_next):
         endpoint = request.url.path if request.url.path in ENDPOINTS else "other"
         started = time.perf_counter()
-        response = await call_next(request)
+        in_progress = metrics.requests_in_progress.labels(endpoint)
+        in_progress.inc()
+        try:
+            response = await call_next(request)
+        except Exception as exc:  # unhandled errors still count (and answer) as a JSON 500
+            logger.error("%s %s failed with %s", request.method, endpoint, type(exc).__name__)
+            response = error_response(500, "internal_error", "internal server error")
+        finally:
+            in_progress.dec()
         elapsed = time.perf_counter() - started
         metrics.requests.labels(endpoint, str(response.status_code)).inc()
         metrics.request_latency.labels(endpoint).observe(elapsed)

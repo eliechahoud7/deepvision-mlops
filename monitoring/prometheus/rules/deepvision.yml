@@ -1,0 +1,61 @@
+# Recording and alerting rules for the inference API.
+#
+# Alerts are evaluated by Prometheus and shown at http://127.0.0.1:9090/alerts; no
+# Alertmanager is configured, so they are not sent anywhere.
+#
+# "Traffic" excludes the operational endpoints (/metrics, /health, /ready), which
+# Prometheus and the Docker health check call continuously.
+
+groups:
+  - name: deepvision-recording
+    rules:
+      - record: deepvision:requests:rate5m
+        expr: sum by (endpoint, status) (rate(deepvision_requests_total{endpoint!~"/metrics|/health|/ready"}[5m]))
+
+      # 0 when there is traffic but no 5xx (no 5xx series exists yet); no value without traffic.
+      - record: deepvision:request_errors:ratio_rate5m
+        expr: |
+          (sum(rate(deepvision_requests_total{endpoint!~"/metrics|/health|/ready", status=~"5.."}[5m])) or vector(0))
+            /
+          (sum(rate(deepvision_requests_total{endpoint!~"/metrics|/health|/ready"}[5m])) > 0)
+
+      - record: deepvision:request_latency_seconds:p95_rate5m
+        expr: histogram_quantile(0.95, sum by (endpoint, le) (rate(deepvision_request_latency_seconds_bucket{endpoint!~"/metrics|/health|/ready"}[5m])))
+
+  - name: deepvision-alerts
+    rules:
+      - alert: DeepVisionApiDown
+        expr: up{job="deepvision-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: The inference API cannot be scraped
+          description: Prometheus has not reached the API's /metrics endpoint for 1 minute.
+
+      - alert: DeepVisionModelNotReady
+        expr: deepvision_model_ready == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: The model is not loaded
+          description: The API is running but /ready returns 503; check the checkpoint mount and the API logs.
+
+      - alert: DeepVisionHighErrorRate
+        expr: deepvision:request_errors:ratio_rate5m > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: More than 5% of API requests fail with 5xx
+          description: "5xx ratio over 5 minutes: {{ $value | humanizePercentage }}."
+
+      - alert: DeepVisionHighLatency
+        expr: deepvision:request_latency_seconds:p95_rate5m{endpoint="/predict"} > 1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: /predict p95 latency is above 1 second
+          description: "p95 latency over 5 minutes: {{ $value | humanizeDuration }}."

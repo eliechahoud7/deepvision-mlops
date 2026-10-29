@@ -1,0 +1,13 @@
+# Loads the dashboards in monitoring/grafana/dashboards (mounted read-only).
+# Edits made in the UI are not saved back: change the JSON files instead.
+apiVersion: 1
+
+providers:
+  - name: deepvision
+    folder: DeepVision
+    type: file
+    disableDeletion: true
+    allowUiUpdates: false
+    updateIntervalSeconds: 60
+    options:
+      path: /etc/grafana/dashboards

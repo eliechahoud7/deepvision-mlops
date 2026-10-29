@@ -1,0 +1,136 @@
+# Unit tests for the alerting rules: promtool test rules <this file>
+# (run in CI; see the README for the local command).
+
+rule_files:
+  - ../rules/deepvision.yml
+
+evaluation_interval: 15s
+
+tests:
+  - name: API down fires after 1 minute
+    interval: 15s
+    input_series:
+      - series: 'up{job="deepvision-api", instance="api:8000"}'
+        values: "1 1 0 0 0 0 0 0"
+    alert_rule_test:
+      - eval_time: 45s
+        alertname: DeepVisionApiDown
+        exp_alerts: []
+      - eval_time: 105s
+        alertname: DeepVisionApiDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              job: deepvision-api
+              instance: api:8000
+            exp_annotations:
+              summary: The inference API cannot be scraped
+              description: Prometheus has not reached the API's /metrics endpoint for 1 minute.
+
+  - name: Model not ready fires after 2 minutes, not while ready
+    interval: 15s
+    input_series:
+      - series: 'deepvision_model_ready{job="deepvision-api", instance="api:8000"}'
+        values: "1x4 0x12"
+    alert_rule_test:
+      - eval_time: 60s
+        alertname: DeepVisionModelNotReady
+        exp_alerts: []
+      # Not ready since 75 s: still pending at 3 m, firing once 2 minutes have passed.
+      - eval_time: 3m
+        alertname: DeepVisionModelNotReady
+        exp_alerts: []
+      - eval_time: 4m
+        alertname: DeepVisionModelNotReady
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              job: deepvision-api
+              instance: api:8000
+            exp_annotations:
+              summary: The model is not loaded
+              description: The API is running but /ready returns 503; check the checkpoint mount and the API logs.
+
+  - name: Error rate ignores operational endpoints and fires above 5%
+    interval: 15s
+    input_series:
+      # /predict: 10 requests per 15 s, of which 2 fail with 500 (20%).
+      - series: 'deepvision_requests_total{endpoint="/predict", status="200"}'
+        values: "0+8x60"
+      - series: 'deepvision_requests_total{endpoint="/predict", status="500"}'
+        values: "0+2x60"
+      # Health-check failures must not count as API errors.
+      - series: 'deepvision_requests_total{endpoint="/ready", status="503"}'
+        values: "0+100x60"
+    promql_expr_test:
+      - expr: deepvision:request_errors:ratio_rate5m
+        eval_time: 10m
+        exp_samples:
+          - labels: "deepvision:request_errors:ratio_rate5m"
+            value: 0.2
+    alert_rule_test:
+      - eval_time: 12m
+        alertname: DeepVisionHighErrorRate
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+            exp_annotations:
+              summary: More than 5% of API requests fail with 5xx
+              description: "5xx ratio over 5 minutes: 20%."
+
+  - name: No error alert when only health checks fail
+    interval: 15s
+    input_series:
+      - series: 'deepvision_requests_total{endpoint="/predict", status="200"}'
+        values: "0+10x60"
+      - series: 'deepvision_requests_total{endpoint="/ready", status="503"}'
+        values: "0+100x60"
+    promql_expr_test:
+      # Traffic without any 5xx series is a 0% error ratio, not "no data".
+      - expr: deepvision:request_errors:ratio_rate5m
+        eval_time: 10m
+        exp_samples:
+          - labels: "deepvision:request_errors:ratio_rate5m"
+            value: 0
+    alert_rule_test:
+      - eval_time: 12m
+        alertname: DeepVisionHighErrorRate
+        exp_alerts: []
+
+  - name: Error ratio has no value without traffic
+    interval: 15s
+    input_series:
+      # Counters exist but stopped increasing: no requests in the last 5 minutes.
+      - series: 'deepvision_requests_total{endpoint="/predict", status="200"}'
+        values: "50x60"
+      - series: 'deepvision_requests_total{endpoint="/predict", status="500"}'
+        values: "5x60"
+    promql_expr_test:
+      - expr: deepvision:request_errors:ratio_rate5m
+        eval_time: 10m
+        exp_samples: []
+    alert_rule_test:
+      - eval_time: 12m
+        alertname: DeepVisionHighErrorRate
+        exp_alerts: []
+
+  - name: Slow /predict fires the latency alert
+    interval: 15s
+    input_series:
+      # Every /predict request takes between 2.5 s and 5 s.
+      - series: 'deepvision_request_latency_seconds_bucket{endpoint="/predict", le="2.5"}'
+        values: "0x80"
+      - series: 'deepvision_request_latency_seconds_bucket{endpoint="/predict", le="5.0"}'
+        values: "0+5x80"
+      - series: 'deepvision_request_latency_seconds_bucket{endpoint="/predict", le="+Inf"}'
+        values: "0+5x80"
+    alert_rule_test:
+      - eval_time: 19m
+        alertname: DeepVisionHighLatency
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              endpoint: /predict
+            exp_annotations:
+              summary: /predict p95 latency is above 1 second
+              description: "p95 latency over 5 minutes: 4.875s."

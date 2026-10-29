@@ -1,6 +1,7 @@
 import json
 import logging
 import re
+import sys
 
 import pytest
 from conftest import CLASSES, image_bytes
@@ -285,6 +286,36 @@ def test_prometheus_metrics(client):
     assert re.search(
         r'^deepvision_model_info\{.*backbone="mobilenet_v3_small".*\} 1\.0$', text, re.M
     )
+
+
+def test_unhandled_errors_are_counted_as_json_500(client, monkeypatch, caplog):
+    def explode(data):
+        raise RuntimeError("secret detail")
+
+    monkeypatch.setattr(client.app.state.predictor, "decode", explode)
+    with caplog.at_level(logging.INFO, logger="deepvision.api"):
+        error = assert_error(client.post("/predict", files=upload()), 500, "internal_error")
+    assert "secret detail" not in error["message"] and "secret detail" not in caplog.text
+    assert "POST /predict failed with RuntimeError" in caplog.text
+    text = client.get("/metrics").text
+    assert metric(text, "deepvision_requests_total", '{endpoint="/predict",status="500"}') == 1
+    assert metric(text, "deepvision_request_latency_seconds_count", '{endpoint="/predict"}') == 1
+    assert metric(text, "deepvision_requests_in_progress", '{endpoint="/predict"}') == 0
+
+
+def test_requests_in_progress(client):
+    client.post("/predict", files=upload())
+    text = client.get("/metrics").text
+    assert metric(text, "deepvision_requests_in_progress", '{endpoint="/predict"}') == 0
+    assert metric(text, "deepvision_requests_in_progress", '{endpoint="/metrics"}') == 1
+
+
+@pytest.mark.skipif(sys.platform != "linux", reason="process metrics are read from /proc")
+def test_process_metrics_are_exported(client):
+    text = client.get("/metrics").text
+    assert metric(text, "process_resident_memory_bytes") > 0
+    assert metric(text, "process_start_time_seconds") > 0
+    assert re.search(r"^process_cpu_seconds_total \S+$", text, re.M)
 
 
 def test_each_app_has_its_own_metrics(tmp_path, checkpoint):

@@ -120,7 +120,7 @@ image contents:
 | 413 | `batch_too_large` | More files than `DEEPVISION_MAX_BATCH` |
 | 415 | `unsupported_format` | Not JPEG, PNG, WebP, or BMP |
 | 422 | `invalid_request` | Missing or invalid field (`details` lists the problems) |
-| 500 | `internal_error` | Unexpected inference failure |
+| 500 | `internal_error` | Unexpected inference or server failure (details are only logged by type) |
 | 503 | `model_unavailable` | The model is not loaded (the message gives a path-free reason) |
 
 ## Metrics
@@ -131,14 +131,18 @@ image contents:
 |---|---|---|
 | `deepvision_requests_total` | counter | `endpoint`, `status` |
 | `deepvision_request_latency_seconds` | histogram | `endpoint` |
+| `deepvision_requests_in_progress` | gauge | `endpoint` |
 | `deepvision_inference_latency_seconds` | histogram | — |
 | `deepvision_predictions_total` | counter | `label` |
 | `deepvision_prediction_confidence` | histogram | — |
 | `deepvision_model_info` | gauge (always 1) | `model_version`, `backbone`, `training_commit` |
 | `deepvision_model_ready` | gauge | — |
+| `process_cpu_seconds_total`, `process_resident_memory_bytes`, `process_start_time_seconds`, … | standard process metrics | — (Linux only) |
 
 Unknown paths are counted under `endpoint="other"` to keep label cardinality bounded.
-Dashboards and alerting belong to the monitoring milestone.
+Every response is counted, including unexpected server errors, which return a JSON
+`500 internal_error` without details. The Prometheus scrape configuration, alert rules,
+and Grafana dashboard are described in the README's Monitoring section.
 
 ## Limitations and security
 
