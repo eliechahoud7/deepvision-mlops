@@ -1,0 +1,153 @@
+# Continuous integration: lint, test, and build the inference image.
+#
+# Runs on pushes to main and on pull requests targeting main. Nothing is published:
+# the Docker image is built and smoke-tested on the runner, never pushed. The trained
+# checkpoint and dataset are DVC-tracked and not available here, so the tests use their
+# own synthetic data (the one real-checkpoint test skips) and the container smoke test
+# checks the "no model" path. Training and held-out evaluation never run in CI.
+#
+# Third-party actions are pinned to full commit SHAs (Dependabot keeps them current).
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.12"
+  # Same versions as development and the Dockerfile, CPU builds (runners have no GPU).
+  TORCH_VERSION: "2.5.1"
+  TORCHVISION_VERSION: "0.20.1"
+  TORCH_INDEX_URL: https://download.pytorch.org/whl/cpu
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  PYTHONUNBUFFERED: "1"
+
+jobs:
+  lint:
+    name: Ruff lint and format
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+
+      - name: Install Ruff (version range from requirements-dev.txt)
+        run: python -m pip install "$(grep -E '^ruff' requirements-dev.txt)"
+
+      - name: Ruff lint
+        run: ruff check --output-format=github .
+
+      - name: Ruff format check
+        run: ruff format --check --diff .
+
+  test:
+    name: Tests (pytest)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+            .github/workflows/ci.yml
+
+      - name: Install CPU PyTorch
+        run: >-
+          python -m pip install
+          "torch==${TORCH_VERSION}" "torchvision==${TORCHVISION_VERSION}"
+          --index-url "${TORCH_INDEX_URL}"
+
+      - name: Install dependencies and the package
+        run: |
+          python -m pip install -r requirements-dev.txt
+          python -m pip install -e . --no-deps
+
+      - name: Show versions
+        run: python -c "import torch, torchvision; print(torch.__version__, torchvision.__version__)"
+
+      - name: Run tests
+        run: python -m pytest
+
+  docker:
+    name: Docker build and smoke test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Validate compose.yaml
+        run: docker compose config --quiet
+
+      - name: Build image (not pushed)
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          push: false
+          load: true
+          tags: deepvision-api:ci
+          build-args: |
+            TORCH_VERSION=${{ env.TORCH_VERSION }}
+            TORCHVISION_VERSION=${{ env.TORCHVISION_VERSION }}
+            TORCH_INDEX_URL=${{ env.TORCH_INDEX_URL }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke test the container (no checkpoint mounted)
+        run: |
+          set -euo pipefail
+          docker run -d --name deepvision-api -p 127.0.0.1:8000:8000 \
+            --read-only --tmpfs /tmp:size=64m,noexec,nosuid,nodev \
+            --cap-drop ALL --security-opt no-new-privileges --init \
+            deepvision-api:ci
+          for _ in $(seq 1 30); do
+            curl -fs -o /dev/null http://127.0.0.1:8000/health && break
+            sleep 1
+          done
+          # Liveness passes; readiness reports the missing model without crashing.
+          curl -fsS http://127.0.0.1:8000/health | grep -q '"status":"ok"'
+          code=$(curl -s -o ready.json -w '%{http_code}' http://127.0.0.1:8000/ready)
+          test "$code" = 503
+          grep -q model_unavailable ready.json
+          curl -fsS http://127.0.0.1:8000/metrics | grep -q '^deepvision_model_ready 0.0'
+          # Image properties: non-root user and CPU-only PyTorch.
+          test "$(docker exec deepvision-api id -u)" = 10001
+          docker exec deepvision-api python -c \
+            "import torch; assert torch.version.cuda is None, torch.__version__"
+          docker image ls deepvision-api:ci
+          echo "Smoke test passed"
+
+      - name: Container logs
+        if: always()
+        run: docker logs deepvision-api 2>&1 || true
+
+      - name: Remove container
+        if: always()
+        run: docker rm -f deepvision-api || true

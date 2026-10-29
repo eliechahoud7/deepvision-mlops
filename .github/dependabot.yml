@@ -1,0 +1,13 @@
+# Keeps the SHA-pinned GitHub Actions in .github/workflows up to date.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    # Wait a week before proposing a new release (time for compromised ones to be pulled).
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: ci
