@@ -243,9 +243,9 @@ stages:
       size: 1948
     - path: src/deepvision/evaluation
       hash: md5
-      md5: 41f2a5659eca9216c489d84715d7d6a4.dir
-      size: 22633
-      nfiles: 3
+      md5: 412fbb7ea8d2d0f8fcd274fdf7b8dade.dir
+      size: 24972
+      nfiles: 4
     - path: src/deepvision/models
       hash: md5
       md5: 88d25b65680375a89e4edec276f778bd.dir

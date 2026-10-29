@@ -42,15 +42,13 @@ from deepvision.data.dataset import (
     build_dataloaders,
     load_manifest,
 )
-from deepvision.data.transforms import IMAGENET_MEAN, IMAGENET_STD
+from deepvision.evaluation.checkpoint import CheckpointError, load_trained_model
 from deepvision.evaluation.metrics import summarize
-from deepvision.models.factory import ImageClassifier, build_model
+from deepvision.models.factory import ImageClassifier
 from deepvision.training.config import ConfigError, load_train_config
 from deepvision.training.engine import (
-    CHECKPOINT_VERSION,
     classification_metrics,
     confusion_matrix,
-    load_checkpoint,
     resolve_device,
 )
 from deepvision.training.train import file_md5, git_info
@@ -130,25 +128,10 @@ def load_model(
     checkpoint_path: Path, class_names: tuple[str, ...], device: torch.device
 ) -> tuple[ImageClassifier, dict]:
     """Rebuild the trained model from its checkpoint, checking it matches the project."""
-    checkpoint_path = Path(checkpoint_path)
-    if not checkpoint_path.is_file():
-        raise EvaluationError(f"checkpoint not found: {checkpoint_path}; run `dvc repro train`")
-    checkpoint = load_checkpoint(checkpoint_path)
-    if checkpoint.get("format_version") != CHECKPOINT_VERSION:
-        raise EvaluationError(f"unsupported checkpoint format {checkpoint.get('format_version')}")
-    if checkpoint["class_names"] != list(class_names):
-        raise EvaluationError(
-            f"checkpoint classes {checkpoint['class_names']} differ from the configured "
-            f"class_names {list(class_names)}"
-        )
-    expected = {"mean": list(IMAGENET_MEAN), "std": list(IMAGENET_STD)}
-    if checkpoint["normalization"] != expected:
-        raise EvaluationError(
-            f"checkpoint normalization {checkpoint['normalization']} is not ImageNet's"
-        )
-    model = build_model(checkpoint["backbone"], checkpoint["num_classes"], pretrained=False)
-    model.load_state_dict(checkpoint["model_state"])
-    return model.to(device).eval(), checkpoint
+    try:
+        return load_trained_model(checkpoint_path, class_names=class_names, device=device)
+    except CheckpointError as exc:
+        raise EvaluationError(str(exc)) from exc
 
 
 @torch.no_grad()
