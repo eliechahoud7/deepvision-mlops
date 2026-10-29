@@ -217,3 +217,102 @@ stages:
       hash: md5
       md5: dff8326d09d674fd06c9e14b5885c053
       size: 388
+  evaluate:
+    cmd: python -m deepvision.evaluation.evaluate --config configs/evaluate.yaml
+    deps:
+    - path: artifacts/checkpoints/best.pt
+      hash: md5
+      md5: 0fce8f2bc9a2cdeb0792a0f98e9d6c1f
+      size: 44801150
+    - path: data/interim/intel-image-classification
+      hash: md5
+      md5: 9ae19279b0dad442847416372414bd60.dir
+      size: 368859597
+      nfiles: 24335
+    - path: data/processed/splits/splits.csv
+      hash: md5
+      md5: 15bbec95148c1fe89f481c02247b68e6
+      size: 3083941
+    - path: src/deepvision/data/dataset.py
+      hash: md5
+      md5: e2b86d30a680a0dac77cc33e43634468
+      size: 9948
+    - path: src/deepvision/data/transforms.py
+      hash: md5
+      md5: f80664b5a812b2cdace792098e7db1aa
+      size: 1948
+    - path: src/deepvision/evaluation
+      hash: md5
+      md5: 41f2a5659eca9216c489d84715d7d6a4.dir
+      size: 22633
+      nfiles: 3
+    - path: src/deepvision/models
+      hash: md5
+      md5: 88d25b65680375a89e4edec276f778bd.dir
+      size: 4268
+      nfiles: 2
+    params:
+      configs/evaluate.yaml:
+        batch_size: 64
+        bootstrap:
+          samples: 1000
+          seed: 42
+        checkpoint: artifacts/checkpoints/best.pt
+        device: auto
+        reports_dir: reports/evaluation
+        splits:
+        - test
+        - test_official
+        top_errors: 30
+        train_config: configs/train.yaml
+        validation_check_tolerance: 0.005
+      configs/train.yaml:
+        data:
+          config: configs/data.yaml
+          class_names:
+          - buildings
+          - forest
+          - glacier
+          - mountain
+          - sea
+          - street
+          num_classes: 6
+          image_size: 224
+          eval_batch_size: 64
+          num_workers: 2
+          pin_memory: true
+          augmentation:
+            crop_scale:
+            - 0.6
+            - 1.0
+            horizontal_flip: 0.5
+            color_jitter:
+              brightness: 0.2
+              contrast: 0.2
+              saturation: 0.2
+              hue: 0.02
+    outs:
+    - path: reports/evaluation/confusion_matrix.csv
+      hash: md5
+      md5: eb803ff081062c4bd6e8932ef36ae07c
+      size: 185
+    - path: reports/evaluation/errors.csv
+      hash: md5
+      md5: 6c68d8750f8edb3d9d5ec9ac8c3aafab
+      size: 1796
+    - path: reports/evaluation/excluded_predictions.csv
+      hash: md5
+      md5: a480d8a16608ffbc12f328e50d0b988f
+      size: 442
+    - path: reports/evaluation/metrics.json
+      hash: md5
+      md5: 6fb2a839f0c56be96e5185989e5e38a6
+      size: 1655
+    - path: reports/evaluation/per_class.csv
+      hash: md5
+      md5: 22cc22d255ef1d8c4e7ebf988b843da5
+      size: 919
+    - path: reports/evaluation/predictions.csv
+      hash: md5
+      md5: c5cb3299153f6d0a63d3c6ecdb486638
+      size: 316016

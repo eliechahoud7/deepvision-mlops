@@ -1,0 +1,4 @@
+relpath,label,predicted,confidence,correct,prob_buildings,prob_forest,prob_glacier,prob_mountain,prob_sea,prob_street
+test/buildings/20805.jpg,buildings,buildings,0.645924,True,0.645924,0.000015,0.000041,0.000013,0.000002,0.354005
+test/glacier/21469.jpg,glacier,glacier,0.995515,True,0.000000,0.000002,0.995515,0.004481,0.000002,0.000000
+test/street/21170.jpg,street,street,0.764005,True,0.234168,0.000002,0.000304,0.000083,0.001438,0.764005

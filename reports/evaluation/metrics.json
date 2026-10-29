@@ -1,0 +1,55 @@
+{
+  "checkpoint": {
+    "backbone": "resnet18",
+    "epoch": 8,
+    "git_commit": "bff616d4356fb8397786966c3e723693f17ad059",
+    "md5": "0fce8f2bc9a2cdeb0792a0f98e9d6c1f",
+    "mlflow_run_id": "4fc349ebc9754892b2ee1119202b1f95",
+    "path": "artifacts/checkpoints/best.pt"
+  },
+  "evaluation_commit": "01b23b2866dcc7227c26fff9a63254431337558d",
+  "test": {
+    "accuracy": 0.9392726059392726,
+    "accuracy_ci95": {
+      "high": 0.9472806139472806,
+      "low": 0.9309309309309309
+    },
+    "ece": 0.024489927954225905,
+    "images": 2997,
+    "log_loss": 0.19509977821425475,
+    "macro_f1": 0.9402229275824153,
+    "macro_f1_ci95": {
+      "high": 0.9481150497371106,
+      "low": 0.9317045136663699
+    },
+    "macro_precision": 0.9400189744420541,
+    "macro_recall": 0.9407302298331776,
+    "top2_accuracy": 0.9933266599933267
+  },
+  "test_official": {
+    "accuracy": 0.9393333333333334,
+    "accuracy_ci95": {
+      "high": 0.9480083333333332,
+      "low": 0.9303250000000001
+    },
+    "ece": 0.02426725285479281,
+    "images": 3000,
+    "log_loss": 0.19514159466930006,
+    "macro_f1": 0.9402945133819554,
+    "macro_f1_ci95": {
+      "high": 0.948805205451289,
+      "low": 0.931481594474103
+    },
+    "macro_precision": 0.9400899777873012,
+    "macro_recall": 0.9408023874145214,
+    "top2_accuracy": 0.9933333333333333
+  },
+  "validation_check": {
+    "max_difference": 0.0,
+    "recomputed_accuracy": 0.9485224022878932,
+    "recomputed_macro_f1": 0.9493540728370294,
+    "stored_accuracy": 0.9485224022878932,
+    "stored_macro_f1": 0.9493540728370294,
+    "tolerance": 0.005
+  }
+}
