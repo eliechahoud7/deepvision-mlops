@@ -484,6 +484,5 @@ and tests the Prometheus alert rules with `promtool`.
   cannot be redistributed, so reproducing the checkpoint means downloading the dataset and
   rerunning the pipeline.
 
-Possible next steps, from the component docs: embedding-based drift detection, per-request
-input statistics for production drift checks (never the images), and authentication and
-TLS before any network exposure.
+Possible next steps, from the component docs: embedding-based drift detection, and
+authentication and TLS before any network exposure.
