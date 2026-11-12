@@ -467,7 +467,9 @@ ruff format --check .
 CI runs these checks, builds and smoke-tests both Docker images and the Compose stack,
 and tests the Prometheus alert rules with `promtool`.
 
-## Limitations
+## Limitations & Future Work
+
+### Limitations
 
 - **Local use only.** The API and frontend have no authentication, TLS, or rate limiting;
   they bind to localhost. Grafana's admin password falls back to `admin` unless
@@ -484,5 +486,22 @@ and tests the Prometheus alert rules with `promtool`.
   cannot be redistributed, so reproducing the checkpoint means downloading the dataset and
   rerunning the pipeline.
 
-Possible next steps, from the component docs: embedding-based drift detection, and
-authentication and TLS before any network exposure.
+### Future Improvements
+
+These are possible next steps, not implemented features:
+
+- **Network hardening:** add authentication, TLS and rate limiting to the API and frontend,
+  and require an explicit Grafana admin password, before any exposure beyond localhost.
+- **Live input logging:** record API inputs (or their features) so drift is measured on real
+  traffic rather than on the `pred` folder stand-in.
+- **Semantic drift detection:** compare model embeddings instead of feature-level statistics,
+  and tune the thresholds instead of using Evidently's defaults.
+- **Out-of-scope rejection:** add a calibrated confidence threshold or an "unknown" outcome so
+  images outside the six scene types are flagged rather than forced into a label.
+- **Targeted error reduction:** address the mountain ↔ glacier and street ↔ buildings
+  confusions (for example with targeted augmentation or a larger backbone), selecting changes
+  on validation data before a single final test.
+- **Concurrent serving:** run several workers or batch requests to raise throughput beyond one
+  forward pass at a time.
+- **Private DVC remote:** store the checkpoint and derived artifacts in a private remote so the
+  model can be restored without rebuilding it from the raw dataset.
